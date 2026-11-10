@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CharacterCard } from "../cards";
 import { first, readCatalog } from "../catalog";
 
@@ -28,7 +27,7 @@ export default async function Search({ searchParams }) {
         <option value="AND">すべて (AND)</option><option value="OR">いずれか (OR)</option>
       </select></label>
       <button type="submit">検索する</button>
-      <Link href="/search">クリア</Link>
+      <a href="/search">クリア</a>
     </form>
     <p className="count">{results.length}件</p>
     <div className="grid">{results.map(row => <CharacterCard key={row.character.id} character={row.character}>

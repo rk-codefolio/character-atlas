@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: archipelago
       POSTGRES_PASSWORD: ${ARCHIPELAGO_DB_PASSWORD:?Set ARCHIPELAGO_DB_PASSWORD in .env}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U archipelago -d archipelago"]
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "archipelago", "-d", "archipelago"]
       interval: 3s
       timeout: 3s
       retries: 15
