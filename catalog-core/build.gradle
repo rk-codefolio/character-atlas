@@ -10,3 +10,5 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 tasks.named('test') { useJUnitPlatform() }
+
+apply from: file("gradle/java-style.gradle")
