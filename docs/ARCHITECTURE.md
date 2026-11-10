@@ -1,71 +1,76 @@
 # 構成図と仕様
 
-公開版「風綴りの群島」の構成と、画面・APIで確認できる振る舞いを記載します。[README](../README.md) · [Dockerでの起動と試し方](../portfolio-demo/README.md)
+架空ゲーム「風綴りの群島」のデータ、Web画面、REST API、権限の構成です。[Dockerでの起動と試し方](../portfolio-demo/README.md)
 
 ## システム構成
 
 ```mermaid
 flowchart LR
     browser["ブラウザ"]
+    discord["Discord"]
     subgraph compose["Docker Compose"]
-        web["web · Next.js"]
+        web["web · Next.js / APIプロキシ"]
         subgraph api["api · Spring Boot / Java 25"]
-            controller["CatalogController"]
-            subgraph core["catalog-core"]
+            controller["RESTコントローラー"]
+            subgraph core["catalog-core · DDD"]
+                model["Catalog / CharacterProfile"]
                 usecase["CharacterCatalog"]
                 port["CatalogRepository"]
             end
             adapter["PostgresCatalog"]
+            moderation["投稿・通報・モデレーション"]
             flyway["Flyway"]
         end
         db[("db · PostgreSQL")]
         web -->|"内部 HTTP / JSON"| controller
         controller --> usecase
-        usecase -->|"図鑑データを取得"| port
+        controller --> moderation
+        usecase --> model
+        usecase --> port
         adapter -.->|"実装"| port
-        adapter -->|"JDBC で読み取り"| db
-        flyway -->|"起動時にスキーマと初期データを適用"| db
+        adapter --> db
+        moderation --> db
+        flyway -->|"スキーマと架空データ"| db
     end
-    browser -->|"127.0.0.1 の Web ポート"| web
+    browser --> web
+    moderation -->|"OAuth2 / 通知"| discord
 ```
 
-| 構成 | 担当 |
+`catalog-core` はキャラクター・スキル・検索根拠のモデルと検索ユースケースを保持します。DB取得は `CatalogRepository` を境界に分離しています。 `portfolio-demo` が実装を組み立て、REST APIとPostgreSQLアダプター、投稿やモデレーション、架空データ、Next.jsの画面を提供します。[共通基盤](../catalog-core/README.md) · [Gradleの接続](../portfolio-demo/settings.gradle) · [Compose定義](../portfolio-demo/compose.yaml)
+
+## 画面とユースケース
+
+| 機能 | 振る舞い |
 | --- | --- |
-| `catalog-core` | キャラクター・スキル・効果のモデルと、名前検索、並べ替え、検索根拠の判定。データ取得の境界を `CatalogRepository` で定義する |
-| `portfolio-demo` | Next.jsの画面、Spring Bootの読み取りAPI、PostgreSQLから読み込むアダプター、架空データの初期登録 |
-| Docker Compose | Web・API・DBを起動する。ホストにはWebポートをループバックで公開し、APIとDBはCompose内で利用する |
+| 図鑑・詳細 | 107人。名前の部分一致、図鑑順と8項目の昇順・降順。属性・星航級バッジ、対象者のみ覚醒前後の切替。スキルCD、パッシブ、レベル別の効果、固有効果の説明 |
+| 詳細検索 | 効果・CDの分類、役割、複数の関連コンテンツを選択。条件名を複数IDに束ね、AND／ORと根拠の優先度を適用 |
+| コンテンツと投稿 | 常設・期間限定の45件。コメント、ビルド、攻略投稿。ビルドには47種の航海具・27種の航路紋・装具3枠。攻略投稿に関連キャラクターを複数設定 |
+| 通報と管理 | 通報の重複を防いでDBに保存。Discord OAuth2を設定した管理者は、投稿編集・削除と通報対応が可能。オーナーは操作ログの閲覧と検索候補の編集が可能 |
+| ゲーム仕様 | 一覧と20の詳細ページ。行動順、属性相性、付与率、装具と育成などの説明 |
 
-公開アプリはGradleの複合ビルドで共通基盤を参照します。スキーマと架空データはFlywayで適用します。[共通基盤](../catalog-core/README.md) · [Gradleの接続](../portfolio-demo/settings.gradle) · [Compose定義](../portfolio-demo/compose.yaml)
+## 検索ルール
 
-## 画面仕様
+明示された効果・タグと関連候補を保持します。ANDではすべて、ORではいずれかの条件を明示だけで満たす結果を先に表示します。残りの関連候補も表示し、各グループ内は図鑑順です。関連コンテンツの指定時は、各グループ内で投稿が紐づく渡り手を先に表示します。条件未選択では全件を対象にします。
 
-| 画面 | 入力と表示 |
+名前は前後の空白を除き、Unicode正規化と小文字化をして照合します。ステータス順の欠損値は昇順・降順とも末尾、同値は図鑑順です。[検索の実装](../catalog-core/src/main/java/dev/characteratlas/application/CharacterCatalog.java) · [検索ルールのテスト](../catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java)
+
+## REST API
+
+Next.jsの同一オリジンプロキシが、次の22ルートをSpring Bootへ中継します。書き込みは設定したオリジンから受け付け、管理操作はセッションとロールで認可します。
+
+| 用途 | メソッドとパス |
 | --- | --- |
-| 渡り手一覧 `/` | 名前の部分一致。初期値は図鑑順の昇順。図鑑順、速度、HP、攻撃力、防御力を昇順・降順で表示できる |
-| 効果検索 `/search` | 効果・タグを複数選び、ANDまたはORで検索する。該当スキルと検索根拠を結果に表示する |
-| 詳細 `/characters/{id}` | 属性、レア度、ステータス、スキル説明と効果を表示する。存在しないIDは404になる |
+| 一覧・詳細 | `GET /api/characters`、`GET /api/characters/{id}` |
+| 育成・効果 | `GET /api/characters/{id}/progress`、`GET /api/characters/{id}/effects` |
+| 効果と検索 | `GET /api/terms`、`GET /api/search` |
+| 投稿オプション | `GET /api/review-options`、`GET /api/search-contents` |
+| 投稿 | `GET /api/posts`、`POST /api/posts`、`PUT /api/posts/{id}`、`DELETE /api/posts/{id}` |
+| 通報 | `POST /api/posts/{id}/reports`、`GET /api/admin/reports`、`PUT /api/admin/reports/{id}` |
+| 管理セッション | `GET /api/admin/session`、`GET /api/admin/discord/start`、`GET /api/admin/discord/callback`、`POST /api/admin/logout` |
+| 管理操作 | `GET /api/admin/posts`、`GET /api/admin/logs`、`PUT /api/admin/search-contents/{id}` |
 
-名前照合は前後の空白を除き、Unicode正規化と小文字化をしてから比較します。ステータスで並べ替えるとき、値がないキャラクターは昇順・降順とも末尾に置き、同値の場合は図鑑順で並べます。[検索と並べ替えの実装](../catalog-core/src/main/java/dev/characteratlas/application/CharacterCatalog.java)
+[検索API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/CatalogController.java) · [投稿API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/ReviewPostController.java) · [REST統合テスト](../portfolio-demo/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
 
-## 効果検索の仕様
+## データの差し替え
 
-各スキルと検索条件の紐づけに、明示された効果、明示されたタグ、関連候補のいずれかを記録します。検索は明示と候補の両方を使って対象を絞り、明示だけで同じ条件を満たせるかどうかで表示順を決めます。
-
-| 条件 | 検索対象に含める条件 | 先に表示する条件 |
-| --- | --- | --- |
-| AND | すべての選択項目に明示または候補の紐づけがある | すべての選択項目が明示されている |
-| OR | いずれかの選択項目に明示または候補の紐づけがある | いずれかの選択項目が明示されている |
-| 未選択 | 全員を表示する | 図鑑順 |
-
-明示一致と関連候補の各グループ内は図鑑順です。たとえば「回復」が明示され「護り」が候補のトワは、両方を選ぶとANDでは関連候補、ORでは明示一致になります。[検索ルールのテスト](../catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [架空データの登録](../portfolio-demo/src/main/resources/db/migration/V100__archipelago_catalog.sql)
-
-## APIとデータ
-
-| 内部API | 入力と結果 |
-| --- | --- |
-| `GET /api/characters` | `name`、`stat`、`direction` で一覧を取得 |
-| `GET /api/characters/{id}` | IDで詳細を取得。存在しないIDは404 |
-| `GET /api/terms` | 選択できる効果・タグを取得 |
-| `GET /api/search` | `mode` と複数指定できる `term` で検索。未知の条件IDは400 |
-
-キャラクターにステータスとスキルが紐づき、スキルと検索条件は中間テーブルで関連付けます。このテーブルが検索根拠を保持します。公開版の画面とAPIは、初期登録した図鑑データを閲覧・検索する範囲です。[API実装](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/CatalogController.java) · [テーブル定義](../catalog-core/src/main/resources/db/migration/V1__character_catalog.sql)
+初回の6人はV100、残る101人と育成・448種の効果説明・投稿例はV101で登録します。既存DBの更新には新しいFlywayマイグレーションを使います。コンテンツ名と装具の選択肢はJSON、肖像とゲーム仕様はNext.jsのファイルで管理します。[V101の架空データ](../portfolio-demo/src/main/resources/db/migration/V101__voyager_atlas.sql) · [コンテンツと装具の設定](../portfolio-demo/src/main/resources/archipelago-options.json) · [肖像](../portfolio-demo/web/app/portrait.jsx) · [ゲーム仕様](../portfolio-demo/web/app/game-rules/guides.js)
