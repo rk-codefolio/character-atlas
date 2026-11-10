@@ -1,4 +1,9 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.catalog.infrastructure;
+
+import dev.characteratlas.archipelago.catalog.application.TaggedPostIndex;
+
+import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
+import dev.characteratlas.archipelago.posting.infrastructure.PostSelections;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -8,22 +13,16 @@ import java.util.List;
 import java.util.Set;
 
 @Repository
-class ReviewPostIndex {
+public class ReviewPostIndex implements TaggedPostIndex {
     private final JdbcTemplate jdbc;
-    private final SearchContentOptions options;
 
-    ReviewPostIndex(JdbcTemplate jdbc, SearchContentOptions options) {
+    public ReviewPostIndex(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
-        this.options = options;
     }
 
-    Set<String> taggedCharacters(List<String> contentIds) {
+    public Set<String> taggedCharacters(List<String> contentIds) {
         var ids = new HashSet<String>();
-        var allowed = options.available().stream().map(ReviewOptions.Content::id).collect(java.util.stream.Collectors.toSet());
         for (String contentId : new HashSet<>(contentIds)) {
-            if (!allowed.contains(contentId)) {
-                throw new IllegalArgumentException("コンテンツが見つかりません。");
-            }
             ids.addAll(jdbc.queryForList("""
                     SELECT subject_id FROM review_post WHERE kind IN ('COMMENT', 'BUILD') AND jsonb_exists(%s, ?)
                     UNION

@@ -1,4 +1,5 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.catalog.infrastructure;
+
 
 import dev.characteratlas.application.CatalogRepository;
 import dev.characteratlas.domain.Catalog;
@@ -23,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-class PostgresCatalog implements CatalogRepository {
+public class PostgresCatalog implements CatalogRepository {
     private final JdbcTemplate jdbc;
     private final JdbcClient client;
 
-    PostgresCatalog(JdbcTemplate jdbc) {
+    public PostgresCatalog(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
         this.client = JdbcClient.create(jdbc);
     }

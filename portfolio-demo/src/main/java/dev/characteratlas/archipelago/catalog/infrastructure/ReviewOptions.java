@@ -1,6 +1,8 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.catalog.infrastructure;
+
 
 import dev.characteratlas.domain.CharacterProfile;
+import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -14,18 +16,18 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
-class ReviewOptions {
+public class ReviewOptions implements CatalogOptions {
     private final JdbcTemplate jdbc;
     private final Book book;
 
-    ReviewOptions(JdbcTemplate jdbc, ObjectMapper mapper) throws IOException {
+    public ReviewOptions(JdbcTemplate jdbc, ObjectMapper mapper) throws IOException {
         this.jdbc = jdbc;
         try (var input = new ClassPathResource("archipelago-options.json").getInputStream()) {
             book = mapper.readValue(input, Book.class);
         }
     }
 
-    Options get() {
+    public Options get() {
         var roles = new LinkedHashMap<String, List<String>>();
         jdbc.query("SELECT role, character_id FROM voyager_role ORDER BY role, character_id", row -> {
             roles.computeIfAbsent(row.getString(1), _ -> new ArrayList<>()).add(row.getString(2));
@@ -40,22 +42,22 @@ class ReviewOptions {
                 roles, kinds, book.attributes(), advanced);
     }
 
-    boolean isSearchable(String id) {
+    public boolean isSearchable(String id) {
         return book.searchable().contains(id);
     }
 
-    List<Content> contents() {
+    public List<Content> contents() {
         return book.contents();
     }
 
-    List<EffectTip> effects(String termId) {
+    public List<EffectTip> effects(String termId) {
         return jdbc.query("""
                 SELECT term_id, label, level, description FROM voyager_effect_tip
                 WHERE term_id = ? ORDER BY level
                 """, (row, _) -> new EffectTip(row.getString(1), row.getString(2), row.getInt(3), row.getString(4)), termId);
     }
 
-    Progress progress(CharacterProfile character) {
+    public Progress progress(CharacterProfile character) {
         var levels = new LinkedHashMap<String, List<SkillLevel>>();
         jdbc.query("""
                 SELECT skill_id, level, description FROM voyager_skill_level
@@ -79,15 +81,6 @@ class ReviewOptions {
         return new Progress(Boolean.TRUE.equals(awakening), book.attributes().get(character.attribute()), levels, metadata);
     }
 
-    record Book(List<Content> contents, Set<String> searchable, List<String> shells, List<Matrix> matrices,
+    public record Book(List<Content> contents, Set<String> searchable, List<String> shells, List<Matrix> matrices,
                 List<String> mainStats, List<String> template, Map<String, String> attributes) {}
-    record Content(String id, String name, String kind, String group, List<String> aliases) {}
-    record Matrix(String name, List<Integer> thresholds) {}
-    record EffectTip(String id, String name, int level, String description) {}
-    record SkillLevel(int level, String description) {}
-    record SkillInfo(Boolean passive, Integer cooldown) {}
-    record Progress(boolean awakening, String attribute, Map<String, List<SkillLevel>> skills, Map<String, SkillInfo> skillInfo) {}
-    record Options(List<Content> contents, List<String> shells, List<Matrix> matrices, List<String> mainStats,
-                   List<String> template, Map<String, List<String>> roles, Map<String, String> effectKinds,
-                   Map<String, String> attributes, List<String> advancedIds) {}
 }

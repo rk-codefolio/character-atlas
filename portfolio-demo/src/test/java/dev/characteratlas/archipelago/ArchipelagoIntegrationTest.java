@@ -1,6 +1,8 @@
 package dev.characteratlas.archipelago;
 
 import org.flywaydb.core.Flyway;
+import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
+import dev.characteratlas.archipelago.moderation.infrastructure.DiscordReportNotifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
