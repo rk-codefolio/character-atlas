@@ -21,7 +21,7 @@
 
 初回公開までの人間の作業時間は **約5時間**（対話履歴からの概算）です。[見積もりの内訳と対話の試行錯誤](docs/AI_DEVELOPMENT.md) · [公開ソースを使った分析事例](docs/WESNOTH_ANALYSIS.md)
 
-**Codexコードレビュー実施済み**。初回公開の実装を対象に、初回起動、検索画面、APIのレスポンスについて3件の指摘がありました。[レビュー結果と対応状況](docs/AI_DEVELOPMENT.md#codexコードレビュー)
+**Codexコードレビュー実施済み**。初回公開時と機能拡張後にレビューを実施しました。[初回の結果](docs/AI_DEVELOPMENT.md#codexコードレビュー) · [第2回の結果と対応](docs/AI_DEVELOPMENT.md#codexコードレビュー第2回)
 
 ### 調査を検索仕様に落とした例
 

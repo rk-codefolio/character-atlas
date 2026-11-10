@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 @Component
 class DiscordReportNotifications {
+    private static final int MAX_MESSAGE_LENGTH = 2_000;
     private final JdbcTemplate jdbc;
     private final URI webhook;
     private final String origin;
@@ -40,6 +41,9 @@ class DiscordReportNotifications {
         }
         if (!webhook.isBlank() && (!owner.matches("[0-9]{1,20}") || recipients.size() > 100)) {
             throw new IllegalArgumentException("Discord report notifications require a valid owner ID and at most 100 recipients");
+        }
+        if (!webhook.isBlank() && message(recipients, origin, new UUID(0, 0)).length() > MAX_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException("Discord report notification exceeds 2000 characters. Reduce the recipient list.");
         }
         this.webhook = webhook.isBlank() ? null : URI.create(webhook + "?wait=true");
         var factory = new SimpleClientHttpRequestFactory();
@@ -82,9 +86,13 @@ class DiscordReportNotifications {
     }
 
     static Map<String, Object> payload(List<String> recipients, String origin, UUID id) {
-        String mentions = String.join(" ", recipients.stream().map(user -> "<@" + user + ">").toList());
-        return Map.of("content", mentions + "\n投稿に通報が届きました。\n<" + origin + "/?admin=1&report=" + id + ">",
+        return Map.of("content", message(recipients, origin, id),
                 "allowed_mentions", Map.of("parse", List.of(), "users", recipients));
+    }
+
+    private static String message(List<String> recipients, String origin, UUID id) {
+        String mentions = String.join(" ", recipients.stream().map(user -> "<@" + user + ">").toList());
+        return mentions + "\n投稿に通報が届きました。\n<" + origin + "/?admin=1&report=" + id + ">";
     }
 
     private record Pending(UUID id, int attempts) {}
