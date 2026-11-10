@@ -1,12 +1,13 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.posting.infrastructure;
+
 
 import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 
-final class PostSelections {
-    static final String CONTENT_TAGS = arrayOrLegacy("contentTags", "contentTag");
-    static final String RELATED_CHARACTERS = arrayOrLegacy("relatedCharacters", "relatedCharacter");
+final public class PostSelections {
+    public static final String CONTENT_TAGS = arrayOrLegacy("contentTags", "contentTag");
+    public static final String RELATED_CHARACTERS = arrayOrLegacy("relatedCharacters", "relatedCharacter");
 
     private PostSelections() {}
 
@@ -17,7 +18,7 @@ final class PostSelections {
                 """.formatted(field, legacyField);
     }
 
-    static List<String> read(JsonNode details, String field, String legacyField) {
+    public static List<String> read(JsonNode details, String field, String legacyField) {
         JsonNode values = details.path(field);
         if (values.isMissingNode() || values.isNull()) {
             JsonNode legacyValue = details.path(legacyField);

@@ -1,4 +1,5 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.moderation.infrastructure;
+
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 @Component
-class DiscordReportNotifications {
+public class DiscordReportNotifications {
     private static final int MAX_MESSAGE_LENGTH = 2_000;
     private final JdbcTemplate jdbc;
     private final URI webhook;
@@ -28,7 +29,7 @@ class DiscordReportNotifications {
     private final List<String> recipients;
     private final RestClient discord;
 
-    DiscordReportNotifications(JdbcTemplate jdbc, @Value("${catalog.discord.report-webhook}") String webhook,
+    public DiscordReportNotifications(JdbcTemplate jdbc, @Value("${catalog.discord.report-webhook}") String webhook,
                                @Value("${catalog.frontend-origin}") String origin,
                                @Value("${catalog.discord.owner-id}") String owner,
                                @Value("${catalog.discord.moderator-ids}") String moderators) {
@@ -85,7 +86,7 @@ class DiscordReportNotifications {
         }
     }
 
-    static Map<String, Object> payload(List<String> recipients, String origin, UUID id) {
+    public static Map<String, Object> payload(List<String> recipients, String origin, UUID id) {
         return Map.of("content", message(recipients, origin, id),
                 "allowed_mentions", Map.of("parse", List.of(), "users", recipients));
     }

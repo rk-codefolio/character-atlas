@@ -38,6 +38,12 @@ flowchart LR
 
 `catalog-core` はキャラクター・スキル・検索根拠のモデルと検索ユースケースを保持します。DB取得は `CatalogRepository` を境界に分離しています。 `portfolio-demo` が実装を組み立て、REST APIとPostgreSQLアダプター、投稿やモデレーション、架空データ、Next.jsの画面を提供します。[共通基盤](../catalog-core/README.md) · [Gradleの接続](../portfolio-demo/settings.gradle) · [Compose定義](../portfolio-demo/compose.yaml)
 
+## コンテキストと依存方向
+
+図鑑はスキル・効果と検索根拠を管理します。投稿はコメント・ビルド・攻略の投稿内容と更新を扱います。モデレーションは通報・権限・監査ログを扱います。図鑑から投稿を参照する際は関連キャラクターの識別子だけを取得し、投稿の更新からは監査ポートへ記録します。
+
+RESTコントローラーでHTTPを処理し、ユースケースで更新と監査をまとめます。投稿本文の制約はドメインで検証します。SQLはポートを実装するアダプターで扱います。
+
 ## 画面とユースケース
 
 | 機能 | 振る舞い |
@@ -69,7 +75,7 @@ Next.jsの同一オリジンプロキシが、次の22ルートをSpring Bootへ
 | 管理セッション | `GET /api/admin/session`、`GET /api/admin/discord/start`、`GET /api/admin/discord/callback`、`POST /api/admin/logout` |
 | 管理操作 | `GET /api/admin/posts`、`GET /api/admin/logs`、`PUT /api/admin/search-contents/{id}` |
 
-[検索API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/CatalogController.java) · [投稿API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/ReviewPostController.java) · [REST統合テスト](../portfolio-demo/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
+[検索API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/catalog/presentation/CatalogController.java) · [投稿API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/posting/presentation/ReviewPostController.java) · [REST統合テスト](../portfolio-demo/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
 
 ## データの差し替え
 

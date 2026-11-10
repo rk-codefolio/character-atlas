@@ -1,4 +1,5 @@
-package dev.characteratlas.archipelago;
+package dev.characteratlas.archipelago.moderation.infrastructure;
+
 
 import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +24,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-class DiscordModerationAccess {
-    static final String USER_SESSION = "moderation.discordUser";
+public class DiscordModerationAccess {
+    public static final String USER_SESSION = "moderation.discordUser";
     private static final String FLOW_SESSION = "moderation.discordFlow";
     private static final String DISCORD = "https://discord.com";
     private final String origin;
@@ -35,7 +36,7 @@ class DiscordModerationAccess {
     private final SecureRandom random = new SecureRandom();
     private final RestClient discord;
 
-    DiscordModerationAccess(@Value("${catalog.frontend-origin}") String origin,
+    public DiscordModerationAccess(@Value("${catalog.frontend-origin}") String origin,
                             @Value("${catalog.discord.client-id}") String clientId,
                             @Value("${catalog.discord.client-secret}") String secret,
                             @Value("${catalog.discord.owner-id}") String ownerId,
@@ -52,7 +53,7 @@ class DiscordModerationAccess {
         discord = RestClient.builder().baseUrl(DISCORD).requestFactory(factory).build();
     }
 
-    Access access(HttpServletRequest request) {
+    public Access access(HttpServletRequest request) {
         var session = request.getSession(false);
         String id = session == null ? null : (String) session.getAttribute(USER_SESSION);
         boolean configured = enabled();
@@ -60,22 +61,22 @@ class DiscordModerationAccess {
         return new Access(configured, owner, configured && !owner && validId(id) && moderatorIds.contains(id));
     }
 
-    String requireModerator(HttpServletRequest request) {
+    public String requireModerator(HttpServletRequest request) {
         Access access = access(request);
         if (!access.canModerate()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return (String) request.getSession(false).getAttribute(USER_SESSION);
     }
 
-    String requireOwner(HttpServletRequest request) {
+    public String requireOwner(HttpServletRequest request) {
         if (!access(request).owner()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return requireModerator(request);
     }
 
-    void requireOrigin(HttpServletRequest request) {
+    public void requireOrigin(HttpServletRequest request) {
         if (!origin.equals(request.getHeader("Origin"))) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
 
-    URI start(HttpServletRequest request) {
+    public URI start(HttpServletRequest request) {
         if (!enabled()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
@@ -87,7 +88,7 @@ class DiscordModerationAccess {
                 .queryParam("state", state).build().encode().toUri();
     }
 
-    URI finish(HttpServletRequest request, String state, String code) {
+    public URI finish(HttpServletRequest request, String state, String code) {
         var session = request.getSession(false);
         if (session == null || !enabled()) return landing("expired");
         Flow flow;
@@ -139,7 +140,7 @@ class DiscordModerationAccess {
         return value != null && value.matches("[0-9]{1,20}");
     }
 
-    record Access(boolean configured, boolean owner, boolean moderator) {
+    public record Access(boolean configured, boolean owner, boolean moderator) {
         public boolean canModerate() { return owner || moderator; }
     }
 
