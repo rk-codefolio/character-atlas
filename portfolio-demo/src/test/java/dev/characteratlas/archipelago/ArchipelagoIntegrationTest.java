@@ -201,8 +201,8 @@ class ArchipelagoIntegrationTest {
     void rejectsWebhookConfigurationsThatCannotSendTheNotification() {
         String moderators = LongStream.range(1_000_000_000_000_000_000L, 1_000_000_000_000_000_090L)
                 .mapToObj(Long::toString).collect(Collectors.joining(","));
-        assertThrows(IllegalArgumentException.class, () -> new DiscordReportNotifications(
-                jdbc, "https://discord.com/api/webhooks/1/test-only", ORIGIN, "1111", moderators));
+        assertThrows(IllegalArgumentException.class, () -> DiscordReportNotifications.validateConfiguration(
+                "https://discord.com/api/webhooks/1/test-only", ORIGIN, "1111", List.of(moderators.split(","))));
     }
 
     private static MockHttpSession session(String id) {

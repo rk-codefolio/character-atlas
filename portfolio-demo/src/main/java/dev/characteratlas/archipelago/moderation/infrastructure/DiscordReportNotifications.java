@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,20 +22,29 @@ import java.util.stream.Stream;
 @Component
 public class DiscordReportNotifications {
     private static final int MAX_MESSAGE_LENGTH = 2_000;
-    private final JdbcTemplate jdbc;
+    private final ModerationMapper mapper;
     private final URI webhook;
     private final String origin;
     private final List<String> recipients;
     private final RestClient discord;
 
-    public DiscordReportNotifications(JdbcTemplate jdbc, @Value("${catalog.discord.report-webhook}") String webhook,
+    public DiscordReportNotifications(ModerationMapper mapper, @Value("${catalog.discord.report-webhook}") String webhook,
                                @Value("${catalog.frontend-origin}") String origin,
                                @Value("${catalog.discord.owner-id}") String owner,
                                @Value("${catalog.discord.moderator-ids}") String moderators) {
-        this.jdbc = jdbc;
+        this.mapper = mapper;
         this.origin = origin;
         this.recipients = Stream.concat(Stream.of(owner), Stream.of(moderators.split(",")))
                 .map(String::strip).filter(id -> id.matches("[0-9]{1,20}")).distinct().toList();
+        validateConfiguration(webhook, origin, owner, recipients);
+        this.webhook = webhook.isBlank() ? null : URI.create(webhook + "?wait=true");
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(8));
+        discord = RestClient.builder().requestFactory(factory).build();
+    }
+
+    public static void validateConfiguration(String webhook, String origin, String owner, List<String> recipients) {
         if (!webhook.isBlank() && !webhook.matches("https://discord\\.com/api/(?:v10/)?webhooks/[0-9]{1,20}/[A-Za-z0-9_-]+")) {
             throw new IllegalArgumentException("Invalid Discord report webhook URL");
         }
@@ -46,28 +54,18 @@ public class DiscordReportNotifications {
         if (!webhook.isBlank() && message(recipients, origin, new UUID(0, 0)).length() > MAX_MESSAGE_LENGTH) {
             throw new IllegalArgumentException("Discord report notification exceeds 2000 characters. Reduce the recipient list.");
         }
-        this.webhook = webhook.isBlank() ? null : URI.create(webhook + "?wait=true");
-        var factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(5));
-        factory.setReadTimeout(Duration.ofSeconds(8));
-        discord = RestClient.builder().requestFactory(factory).build();
     }
 
     @Scheduled(fixedDelay = 15000)
     @Transactional
     public void deliverNext() {
         if (webhook == null) return;
-        var reports = jdbc.query("""
-                SELECT report_id, attempts FROM post_report
-                WHERE notified_at IS NULL AND resolved_at IS NULL AND next_attempt <= now()
-                ORDER BY next_attempt LIMIT 1 FOR UPDATE SKIP LOCKED
-                """, (row, index) -> new Pending(row.getObject(1, UUID.class), row.getInt(2)));
-        if (reports.isEmpty()) return;
-        Pending report = reports.get(0);
+        var report = mapper.next();
+        if (report == null) return;
         try {
             discord.post().uri(webhook).contentType(MediaType.APPLICATION_JSON)
                     .body(payload(recipients, origin, report.id())).retrieve().toBodilessEntity();
-            jdbc.update("UPDATE post_report SET notified_at = now() WHERE report_id = ?", report.id());
+            mapper.delivered(report.id());
         } catch (RestClientException error) {
             int delay = Math.min(3600, 60 << Math.min(report.attempts(), 6));
             if (error instanceof RestClientResponseException response && response.getStatusCode().value() == 429
@@ -79,10 +77,7 @@ public class DiscordReportNotifications {
             }
             LoggerFactory.getLogger(DiscordReportNotifications.class).warn(
                     "Discord report notification queued for retry, report={}, delay={}s", report.id(), delay);
-            jdbc.update("""
-                    UPDATE post_report SET attempts = attempts + 1, next_attempt = now() + ? * interval '1 second'
-                    WHERE report_id = ?
-                    """, delay, report.id());
+            mapper.retry(report.id(), delay);
         }
     }
 
@@ -96,5 +91,4 @@ public class DiscordReportNotifications {
         return mentions + "\n投稿に通報が届きました。\n<" + origin + "/?admin=1&report=" + id + ">";
     }
 
-    private record Pending(UUID id, int attempts) {}
 }
