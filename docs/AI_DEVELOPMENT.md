@@ -28,19 +28,19 @@
 | 一覧でステータスの違いをどこまで見せるか | 一覧は見つけるために使う。比較表は設けず、選んだステータスで昇順・降順に並べる | 図鑑順を初期値にし、速度などを選んだときにその数値をカードに表示した |
 | キャラクターの属性が分かるようにしたい | 一覧でも詳細でも、名前と属性をすぐ確認できる形にしたい | 属性を色・文字・記号で表示し、一覧・検索結果・詳細で同じ表記を使った |
 
-AIには、修正後の導線と操作手順を具体化し、実際の画面を開いて確認する作業を任せました。[画面の試し方](../portfolio-demo/README.md#試し方)
+AIには、修正後の導線と操作手順を具体化し、実際の画面を開いて確認する作業を任せました。[画面の試し方](../archipelago-app/README.md#試し方)
 
 ## 3. 実装と公開範囲を決める
 
 - **私の判断**。独立した見本を作る案を見直し、検索ルールを持つJava・DDDの共通基盤と、架空データを使うアプリを共有する方針にした。Dockerで画面からDBまで起動できるようにし、最初のREADMEから試し方へ進めるようにした。
 - **AIの作業**。ドメインモデルと検索処理を共通基盤に置き、データの読み込み先をインターフェースで分離した。公開アプリではSpring BootのAPIからPostgreSQLを読み、Next.jsで表示する。架空の6人・技・効果の関連はFlywayで初期登録した。
-- **公開前の確認**。公開用に切り出したフォルダーでビルドし、Gitの登録対象を点検した。DBとAPIはCompose内で通信し、ブラウザ向けのポートだけをローカルに公開する。[共通基盤の構成](../catalog-core/README.md) · [初期データ](../portfolio-demo/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [Docker構成](../portfolio-demo/compose.yaml)
+- **公開前の確認**。公開用に切り出したフォルダーでビルドし、Gitの登録対象を点検した。DBとAPIはCompose内で通信し、ブラウザ向けのポートだけをローカルに公開する。[共通基盤の構成](../catalog-core/README.md) · [初期データ](../archipelago-app/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [Docker構成](../archipelago-app/compose.yaml)
 
 ## 4. 技術選択を問い直す
 
 - **やり取りの要旨**。最初はJava 17を使っていた。私から最新LTSへ更新するよう依頼し、続けて「ソースの書き方も新しいJavaに合っているか」を確認した。
 - **AIの作業**。ビルドとDocker実行環境をJava 25に揃えた。検索結果の比較条件を一つにまとめ、明示一致の優先と図鑑順の関係をコードに表した。DBの版番号を読む箇所では `JdbcClient`、行マッピングの未使用引数には `_` を使った。
-- **判断**。技術の更新は、ビルド環境とコードの変更を分けて確認した。検索仕様を保つことを受け入れ条件にした。[Javaの設定](../catalog-core/build.gradle) · [DBの読み取り](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java)
+- **判断**。技術の更新は、ビルド環境とコードの変更を分けて確認した。検索仕様を保つことを受け入れ条件にした。[Javaの設定](../catalog-core/build.gradle) · [DBの読み取り](../archipelago-app/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java)
 
 ## 5. 再現できる確認結果
 
@@ -50,7 +50,7 @@ AIには、修正後の導線と操作手順を具体化し、実際の画面を
 | 並べ替えと欠損 | JUnitで、図鑑順、速度の昇順・降順、値がないキャラの末尾表示、全角入力を含む名前の正規化を確認した |
 | 画面からDBまで | Dockerで初期登録後、一覧に6人が表示され、速度降順の先頭がソラノ、護りと回復のAND結果がマレア・ユラ・トワの順、OR結果が4人であることを確認した。トワの詳細で効果と関連候補を確認した |
 
-[JUnitのテストコード](../catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [Docker起動手順](../portfolio-demo/README.md#dockerで起動する)
+[JUnitのテストコード](../catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [Docker起動手順](../archipelago-app/README.md#dockerで起動する)
 
 ## Codexコードレビュー
 
@@ -58,9 +58,9 @@ AIには、修正後の導線と操作手順を具体化し、実際の画面を
 
 | 優先度 | Codexの指摘 | 人間のレビューで確認すること | 状態 |
 | --- | --- | --- | --- |
-| P2 | PostgreSQLの起動チェックが初期化用の一時サーバーに通ると、APIがTCPで接続できる前に起動する可能性がある。[Compose定義](../portfolio-demo/compose.yaml) | 空のDBボリュームから起動し、DBの準備完了後にAPIが起動するか確認する | PR #2で修正 |
-| P2 | OR検索後に「クリア」を押すと、結果は初期状態に戻る一方、画面の選択欄がORのまま残る可能性がある。[検索画面](../portfolio-demo/web/app/search/page.jsx) | ORで検索してからクリアし、選択欄がANDに戻り、次の検索にも反映されるか確認する | PR #2で修正 |
-| P3 | DBに基本値と異なる覚醒後の値があっても、詳細APIの `maxAwakenedStats` に基本値が入る。[DBアダプター](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java) | 覚醒後の値を詳細APIで扱うか、公開版のレスポンスから外すか判断する | PR #2で修正 |
+| P2 | PostgreSQLの起動チェックが初期化用の一時サーバーに通ると、APIがTCPで接続できる前に起動する可能性がある。[Compose定義](../archipelago-app/compose.yaml) | 空のDBボリュームから起動し、DBの準備完了後にAPIが起動するか確認する | PR #2で修正 |
+| P2 | OR検索後に「クリア」を押すと、結果は初期状態に戻る一方、画面の選択欄がORのまま残る可能性がある。[検索画面](../archipelago-app/web/app/search/page.jsx) | ORで検索してからクリアし、選択欄がANDに戻り、次の検索にも反映されるか確認する | PR #2で修正 |
+| P3 | DBに基本値と異なる覚醒後の値があっても、詳細APIの `maxAwakenedStats` に基本値が入る。[DBアダプター](../archipelago-app/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java) | 覚醒後の値を詳細APIで扱うか、公開版のレスポンスから外すか判断する | PR #2で修正 |
 
 初回レビューへの対応はPR #2にまとめています。[初回の改善PR](https://github.com/rk-codefolio/character-atlas/pull/2)
 

@@ -1,0 +1,23 @@
+configurations {
+    googleJavaFormat
+}
+
+dependencies {
+    googleJavaFormat('com.google.googlejavaformat:google-java-format:2.0.0:all-deps') { transitive = false }
+}
+
+def formatterJava = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+def javaSources = files(sourceSets.main.allJava, sourceSets.test.allJava)
+def registerFormatter = { String taskName, List<String> options ->
+    tasks.register(taskName, Exec) {
+        group = 'verification'
+        inputs.files(javaSources)
+        doFirst {
+            commandLine([formatterJava.get().executablePath.asFile, '-jar',
+                         configurations.googleJavaFormat.singleFile] + options + javaSources.files.sort())
+        }
+    }
+}
+registerFormatter('formatJava', ['--replace'])
+registerFormatter('checkJavaStyle', ['--dry-run', '--set-exit-if-changed'])
+tasks.named('check') { dependsOn 'checkJavaStyle' }

@@ -2,12 +2,12 @@
 
 架空ゲーム「風綴りの群島」の図鑑です。107人の渡り手を探し、スキルや育成値を確認できます。45件のコンテンツを掲載し、コメント・ビルド・攻略投稿、通報、管理者による対応を扱います。
 
-**[Dockerで起動する](portfolio-demo/README.md#dockerで起動する)** · [操作を試す](portfolio-demo/README.md#試し方) · [構成図・仕様](docs/ARCHITECTURE.md) · [Codexとの開発記録](docs/AI_DEVELOPMENT.md)
+**[Dockerで起動する](archipelago-app/README.md#dockerで起動する)** · [操作を試す](archipelago-app/README.md#試し方) · [構成図・仕様](docs/ARCHITECTURE.md) · [Codexとの開発記録](docs/AI_DEVELOPMENT.md)
 
 | プロジェクト | 担当 |
 | --- | --- |
 | [catalog-core](catalog-core/README.md) | Java 25 LTS・DDD。キャラクター、技、効果、検索根拠と検索ユースケース |
-| [portfolio-demo](portfolio-demo/README.md) | Spring Boot・PostgreSQL・Flyway・Next.js。22のREST API、架空データ、図鑑・投稿・管理の画面 |
+| [archipelago-app](archipelago-app/README.md) | Spring Boot・PostgreSQL・Flyway・Next.js。22のREST API、架空データ、図鑑・投稿・管理の画面 |
 
 ## Codexを使った開発
 
@@ -27,7 +27,7 @@
 
 架空の技「夜渡りの灯」は「回復」を明示し、「護り」とは関連候補で結び付けています。**護りと回復のAND検索**では、両方が明示されたマレアとユラの後に、トワが「関連候補」として並びます。**OR検索**では、トワも回復を明示しているため、明示一致のグループに入ります。表示順位を見れば、元の調査で区別した根拠が検索結果にどう反映されるか確認できます。
 
-[検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [架空データの初期登録](portfolio-demo/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [全機能版の追加データ](portfolio-demo/src/main/resources/db/migration/V101__voyager_atlas.sql) · [画面での試し方](portfolio-demo/README.md#試し方)
+[検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [架空データの初期登録](archipelago-app/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [全機能版の追加データ](archipelago-app/src/main/resources/db/migration/V101__voyager_atlas.sql) · [画面での試し方](archipelago-app/README.md#試し方)
 
 ## 共通基盤のテスト
 

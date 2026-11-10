@@ -1,6 +1,6 @@
 # 構成図と仕様
 
-架空ゲーム「風綴りの群島」のデータ、Web画面、REST API、権限の構成です。[Dockerでの起動と試し方](../portfolio-demo/README.md)
+架空ゲーム「風綴りの群島」のデータ、Web画面、REST API、権限の構成です。[Dockerでの起動と試し方](../archipelago-app/README.md)
 
 ## システム構成
 
@@ -36,7 +36,7 @@ flowchart LR
     moderation -->|"OAuth2 / 通知"| discord
 ```
 
-`catalog-core` はキャラクター・スキル・検索根拠のモデルと検索ユースケースを保持します。DB取得は `CatalogRepository` を境界に分離しています。 `portfolio-demo` が実装を組み立て、REST APIとPostgreSQLアダプター、投稿やモデレーション、架空データ、Next.jsの画面を提供します。[共通基盤](../catalog-core/README.md) · [Gradleの接続](../portfolio-demo/settings.gradle) · [Compose定義](../portfolio-demo/compose.yaml)
+`catalog-core` はキャラクター・スキル・検索根拠のモデルと検索ユースケースを保持します。DB取得は `CatalogRepository` を境界に分離しています。 `archipelago-app` が実装を組み立て、REST APIとPostgreSQLアダプター、投稿やモデレーション、架空データ、Next.jsの画面を提供します。[共通基盤](../catalog-core/README.md) · [Gradleの接続](../archipelago-app/settings.gradle) · [Compose定義](../archipelago-app/compose.yaml)
 
 ## コンテキストと依存方向
 
@@ -75,8 +75,8 @@ Next.jsの同一オリジンプロキシが、次の22ルートをSpring Bootへ
 | 管理セッション | `GET /api/admin/session`、`GET /api/admin/discord/start`、`GET /api/admin/discord/callback`、`POST /api/admin/logout` |
 | 管理操作 | `GET /api/admin/posts`、`GET /api/admin/logs`、`PUT /api/admin/search-contents/{id}` |
 
-[検索API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/catalog/presentation/CatalogController.java) · [投稿API](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/posting/presentation/ReviewPostController.java) · [REST統合テスト](../portfolio-demo/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
+[検索API](../archipelago-app/src/main/java/dev/characteratlas/archipelago/catalog/presentation/CatalogController.java) · [投稿API](../archipelago-app/src/main/java/dev/characteratlas/archipelago/posting/presentation/ReviewPostController.java) · [REST統合テスト](../archipelago-app/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
 
 ## データの差し替え
 
-初回の6人はV100、残る101人と育成・448種の効果説明・投稿例はV101で登録します。既存DBの更新には新しいFlywayマイグレーションを使います。コンテンツ名と装具の選択肢はJSON、肖像とゲーム仕様はNext.jsのファイルで管理します。[V101の架空データ](../portfolio-demo/src/main/resources/db/migration/V101__voyager_atlas.sql) · [コンテンツと装具の設定](../portfolio-demo/src/main/resources/archipelago-options.json) · [肖像](../portfolio-demo/web/app/portrait.jsx) · [ゲーム仕様](../portfolio-demo/web/app/game-rules/guides.js)
+初回の6人はV100、残る101人と育成・448種の効果説明・投稿例はV101で登録します。既存DBの更新には新しいFlywayマイグレーションを使います。コンテンツ名と装具の選択肢はJSON、肖像とゲーム仕様はNext.jsのファイルで管理します。[V101の架空データ](../archipelago-app/src/main/resources/db/migration/V101__voyager_atlas.sql) · [コンテンツと装具の設定](../archipelago-app/src/main/resources/archipelago-options.json) · [肖像](../archipelago-app/web/app/portrait.jsx) · [ゲーム仕様](../archipelago-app/web/app/game-rules/guides.js)

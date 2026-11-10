@@ -4,43 +4,37 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-public record CharacterProfile(String id, String name, String attribute, String rarity, Integer archivePriority,
-                               Map<Stat, BigDecimal> stats, Map<Stat, BigDecimal> maxAwakenedStats, List<Skill> skills) {
-    public CharacterProfile {
-        stats = Map.copyOf(stats);
-        maxAwakenedStats = Map.copyOf(maxAwakenedStats);
-        skills = List.copyOf(skills);
-    }
+/** キャラクターの詳細を表す。 */
+public record CharacterProfile(
+    /* 識別子。 */ String id, /* 表示名。 */
+    String name, /* attribute。 */
+    String attribute, /* rarity。 */
+    String rarity, /* 図鑑の優先順位。 */
+    Integer archivePriority,
+    /* 能力値の組み合わせ。 */ Map<Stat, BigDecimal> stats, /* 最大の覚醒後のStats。 */
+    Map<Stat, BigDecimal> maxAwakenedStats, /* skills。 */
+    List<Skill> skills) {
+  /** キャラクターの詳細を初期化する。 */
+  public CharacterProfile {
+    stats = Map.copyOf(stats);
+    maxAwakenedStats = Map.copyOf(maxAwakenedStats);
+    skills = List.copyOf(skills);
+  }
 
-    public CharacterProfile(String id, String name, String attribute, String rarity, Integer archivePriority,
-                            Map<Stat, BigDecimal> stats, List<Skill> skills) {
-        this(id, name, attribute, rarity, archivePriority, stats, stats, skills);
-    }
+  /** キャラクターの詳細を初期化する。 */
+  public CharacterProfile(
+      String id,
+      String name,
+      String attribute,
+      String rarity,
+      Integer archivePriority,
+      Map<Stat, BigDecimal> stats,
+      List<Skill> skills) {
+    this(id, name, attribute, rarity, archivePriority, stats, stats, skills);
+  }
 
-    public Map<Stat, BigDecimal> stats(boolean awakened) {
-        return awakened ? maxAwakenedStats : stats;
-    }
-
-    public enum Stat { SPEED, HP, ATTACK, DEFENCE, CRITICAL_RATE, CRITICAL_DAMAGE, EFFECT_HIT, EFFECT_RESIST }
-
-    public record Skill(String id, String name, int level, String description,
-                        TextOrigin textOrigin, List<Match> matches) {
-        public Skill {
-            matches = List.copyOf(matches);
-        }
-    }
-
-    public enum TextOrigin { PACKAGED_JA, OTHER_PACKAGED_LANGUAGE, MISSING }
-
-    public record Match(String termId, Evidence evidence) {}
-
-    public enum Evidence {
-        DECLARED_EFFECT,
-        DECLARED_TAG,
-        RELATED_CANDIDATE;
-
-        public boolean isCandidate() {
-            return this == RELATED_CANDIDATE;
-        }
-    }
+  /** statsを扱う。 */
+  public Map<Stat, BigDecimal> stats(boolean awakened) {
+    return awakened ? maxAwakenedStats : stats;
+  }
 }
