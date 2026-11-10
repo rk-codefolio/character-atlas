@@ -1,5 +1,3 @@
-export const stats = { SPEED: "速度", HP: "HP", ATTACK: "攻撃力", DEFENCE: "防御力" };
-
 export async function readCatalog(path, query = new URLSearchParams()) {
   const url = new URL("/api/" + path, process.env.CATALOG_API_ORIGIN ?? "http://127.0.0.1:8080");
   url.search = query.toString();

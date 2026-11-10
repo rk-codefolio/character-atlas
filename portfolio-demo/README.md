@@ -1,6 +1,6 @@
 # 風綴りの群島
 
-架空のゲーム「風綴りの群島」の渡り手を、名前や技の効果から探せる図鑑です。Next.js の画面から Spring Boot の API を呼び、PostgreSQL のデータを共通の Java 検索ユースケースで処理します。
+架空の群島を旅する107人の渡り手と45件のコンテンツを収録した図鑑です。データ、肖像、戦闘の説明、投稿例はこの架空世界のために用意しました。Next.js、Spring BootのREST API、PostgreSQL、共通のJava検索基盤をDockerで動かせます。
 
 ## 使用バージョン
 
@@ -10,33 +10,41 @@
 
 ## Dockerで起動する
 
-Docker Desktopなどで Docker Engine と Compose v2 を起動してください。リポジトリのルートから次のコマンドを実行します。
+Docker DesktopなどでDocker EngineとCompose v2を起動し、リポジトリのルートで次を実行します。
 
 ```sh
 cd portfolio-demo
 cp .env.example .env
 ```
 
-`.env` の `ARCHIPELAGO_DB_PASSWORD` にローカル専用の任意のパスワードを設定します。英数字だけで20文字以上にするとそのまま記入できます。ポート3000が使用中なら `ARCHIPELAGO_WEB_PORT` を変更します。
+`.env` の `ARCHIPELAGO_DB_PASSWORD` にローカル専用の任意のパスワードを設定します。ポート3000が使用中なら `ARCHIPELAGO_WEB_PORT` を変更します。
 
 ```sh
 docker compose up --build --wait
 ```
 
-[渡り手図鑑を開く](http://localhost:3000)。ポートを変更した場合は、URLの末尾も同じ値にします。初回起動時に Flyway がスキーマを作成し、架空の6人と技・検索条件をデータベースへ登録します。Webだけをローカルのブラウザに公開し、APIとデータベースはCompose内で接続します。
+[渡り手図鑑を開く](http://localhost:3000)。ポートを変更した場合はURLの末尾を同じ値にします。Flywayがスキーマと架空データを登録します。Webポートはローカルに公開され、WebからREST APIとPostgreSQLへはCompose内で接続します。
 
 ### 試し方
 
-1. 渡り手一覧で「速度」「降順」を選びます。ソラノが先頭に表示されます。
-2. 「技で探す」で「護り」と「回復」を選び、ANDで検索します。明示された2人の後に「関連候補」のトワが並びます。
-3. ORに切り替えると、どちらか一方だけを持つ渡り手も表示されます。
-4. 名前を開くと属性・ステータス・スキルと、スキルに紐づく効果を確認できます。
+1. **渡り手一覧**で「速度」「降順」を選びます。覚醒後の速度が140.5のソラノが先頭です。
+2. **詳細検索**の「＋ 条件を追加」で「護り」「回復」を選びます。ANDは3人で、マレア・ユラの後に「関連候補」のトワが並びます。ORは4人です。「クリア」でANDと全員表示に戻ります。役割や複数の関連コンテンツも指定できます。
+3. **ソラノの詳細**を開き、覚醒前132と最大覚醒後140.5を切り替えます。コメント、ビルド、スキルのタブがあり、スキルのCDや段階別の効果を確認できます。
+4. **コンテンツ一覧**で常設・期間限定を確認します。北灯台の巡視には攻略投稿があり、関連する渡り手を複数選んで投稿できます。投稿カードから通報できます。
+5. **ゲーム仕様**で、航行ゲージ、属性相性、効果的中・抵抗、装具など20の説明ページを開けます。
 
-停止するには `docker compose down` を実行します。DBのボリュームは次回も使います。PostgreSQL 16の旧構成から切り替える場合、18では新しいボリュームを使い、架空データを初期登録します。旧ボリュームはそのまま残ります。起動に失敗した場合は `docker compose ps` と `docker compose logs api web` で状況を確認できます。
+停止は `docker compose down` で行います。DBのボリュームは次回も使います。旧PostgreSQL 16の構成から切り替える場合、18では別ボリュームを使います。起動に失敗した場合は `docker compose ps` と `docker compose logs api web` で確認できます。
 
-## ファイルの位置
+## Discord認証と通報通知
 
-- `src/main/resources/db/migration/V100__archipelago_catalog.sql` が架空データの初期登録です。
-- `src/main/java` が検索APIとPostgreSQLからの読み取りを担当します。
-- `web/app` が図鑑の画面です。属性の記号と配色は画面のスタイルで定義しています。
-- [catalog-core](../catalog-core/README.md) にドメインモデルと検索ロジック、JUnitテストがあります。
+管理画面は `/?admin=1` から開きます。DiscordのOAuth2アプリに `http://localhost:3000/api/admin/discord/callback` を登録し、同じWebオリジンでアクセスします。ポートやHTTPSを変更する場合は、コールバックURLと `CATALOG_FRONTEND_ORIGIN` を合わせます。HTTPSを使う場合は `CATALOG_SECURE_COOKIE=true` を設定します。
+
+`.env` にアプリの `CATALOG_DISCORD_CLIENT_ID` と `CATALOG_DISCORD_CLIENT_SECRET`、オーナーのユーザーID `CATALOG_DISCORD_OWNER_ID`、モデレーターのユーザーIDをカンマで区切った `CATALOG_DISCORD_MODERATOR_IDS` を設定します。設定済みのモデレーターは投稿編集・削除と通報対応、オーナーは加えて操作ログ閲覧と検索用コンテンツ候補の変更ができます。
+
+Discordへの通報通知を使う場合は `CATALOG_DISCORD_REPORT_WEBHOOK` を設定します。通報はDBに記録され、設定されたオーナーとモデレーターが通知のメンション対象です。秘密情報はローカルの `.env` に保存します。閲覧、投稿、通報の保存はDiscordを設定せずに試せます。
+
+## 統合テスト
+
+Java 25で、空の検証用PostgreSQLに対し `ATLAS_TEST_DB_URL` と `ARCHIPELAGO_DB_PASSWORD` を設定し、このディレクトリで `../catalog-core/gradlew test` を実行します。テストはユーザー `archipelago` を使って専用のスキーマを作ります。検索と覚醒差分、投稿の入力検証、通報、モデレーターとオーナーの権限差を検証します。[統合テスト](src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
+
+[構成図とREST API一覧](../docs/ARCHITECTURE.md)
