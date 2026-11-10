@@ -1,0 +1,6 @@
+**
+!app/
+!app/**
+!package.json
+!package-lock.json
+!next.config.mjs
