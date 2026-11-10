@@ -155,7 +155,14 @@ export default function Admin({ options, onLogout }) {
             <h3>{post.title || kinds[post.kind] || "投稿"}</h3>
             <p className="caption">{reasons[row.reason]} · {new Date(row.createdAt).toLocaleString("ja-JP")} · {row.resolvedAt ? "対応済み" : "未対応"}</p>
             {row.note && <p className="post-body">{row.note}</p>}
-            <details><summary>通報時の投稿を見る</summary><p className="post-body">{post.body}</p></details>
+            <details>
+              <summary>通報時の投稿を見る</summary>
+              <p className="post-body">{post.body}</p>
+              {post.details && Object.keys(post.details).length > 0 && <>
+                <h4>通報時の投稿詳細</h4>
+                <pre>{JSON.stringify(post.details, null, 2)}</pre>
+              </>}
+            </details>
             <div className="form-actions">
               {!row.resolvedAt && <button disabled={busy}
                 onClick={() => update("reports/" + row.id, "PUT")}>対応済みにする</button>}

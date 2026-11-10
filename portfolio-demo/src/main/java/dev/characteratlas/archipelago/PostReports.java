@@ -34,7 +34,7 @@ class PostReports {
         int inserted = jdbc.update("""
                 INSERT INTO post_report (report_id, post_id, reason, note, post_snapshot)
                 SELECT ?, p.post_id, ?, ?, jsonb_build_object('kind', p.kind, 'subject', p.subject_id,
-                    'title', p.title, 'body', p.body)
+                    'title', p.title, 'body', p.body, 'details', p.details)
                 FROM review_post p WHERE p.post_id = ?
                 ON CONFLICT (post_id) WHERE resolved_at IS NULL DO NOTHING
                 """, UUID.randomUUID(), submission.reason().name(), note, id);

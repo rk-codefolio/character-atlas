@@ -6,7 +6,12 @@ import ReportButton from "./report";
 
 const labels = { COMMENT: "コメント", BUILD: "ビルド", CONTENT: "攻略投稿" };
 
-const selections = (details, field, legacy) => details[field] ?? (details[legacy] ? [details[legacy]] : []);
+function selections(details, field, legacy) {
+  const values = details[field] ?? [details[legacy]];
+  return Array.isArray(values) ? values.filter(value => typeof value === "string" && value.trim()) : [];
+}
+
+const optionalText = value => typeof value === "string" ? value : "";
 const newMatrix = () => ({ name: "", points: "" });
 
 function newDraft() {
@@ -99,7 +104,10 @@ export default function Posts({ kind, subject, subjectName, options, moderate = 
         if (!response.ok) throw new Error();
         return response.json();
       })
-      .then(rows => setPosts(rows.map(row => ({ ...row, details: JSON.parse(row.details) }))))
+      .then(rows => setPosts(rows.map(row => {
+        const details = JSON.parse(row.details);
+        return { ...row, details: { ...details, stage: optionalText(details.stage), targetStats: optionalText(details.targetStats) } };
+      })))
       .catch(() => { if (!controller.signal.aborted) setError("投稿を読み込めませんでした。"); });
     return () => controller.abort();
   }, [kind, subject, revision]);

@@ -106,16 +106,17 @@ class ReviewPostController {
                 && post.details() != null && post.details().isObject(), "投稿先か入力項目が不正です。");
         require(clean(post.title()).length() <= 120 && clean(post.body()).length() <= 8000
                 && post.details().toString().length() <= 12000, "入力が長すぎます。");
+        var contentIds = reviewOptions.contents().stream().map(ReviewOptions.Content::id)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        require(contentIds.containsAll(selections(post.details(), "contentTags", "contentTag")),
+                "コンテンツタグが見つかりません。");
         if (post.kind() == Kind.CONTENT) {
-            require(reviewOptions.contents().stream().anyMatch(content -> content.id().equals(post.subject())),
-                    "コンテンツを選んでください。");
+            require(contentIds.contains(post.subject()), "コンテンツを選んでください。");
+            require(optionalText(post.details().path("stage"), 120), "ステージ・難易度は120文字以内で入力してください。");
             require(selections(post.details(), "relatedCharacters", "relatedCharacter").stream().allMatch(this::characterExists),
                     "関連渡り手が見つかりません。");
         } else {
             require(characterExists(post.subject()), "キャラクターが見つかりません。");
-            require(selections(post.details(), "contentTags", "contentTag").stream().allMatch(tag ->
-                            reviewOptions.contents().stream().anyMatch(content -> content.id().equals(tag))),
-                    "コンテンツタグが見つかりません。");
         }
         require(post.kind() == Kind.COMMENT || !clean(post.title()).isEmpty(), "タイトルを入力してください。");
         require(post.kind() == Kind.BUILD || !clean(post.body()).isEmpty(), "本文を入力してください。");
@@ -136,6 +137,7 @@ class ReviewPostController {
     }
 
     private void validateBuild(JsonNode details) {
+        require(optionalText(details.path("targetStats"), 240), "目標ステータスは240文字以内で入力してください。");
         var options = reviewOptions.get();
         require(options.shells().contains(details.path("shell").asString("")), "航海具を選んでください。");
         var matrices = details.path("matrices");
@@ -152,6 +154,10 @@ class ReviewPostController {
         var stats = details.path("mainStats");
         require(stats.isArray() && stats.size() == 3 && stats.valueStream().allMatch(stat -> options.mainStats().contains(stat.asString(""))),
                 "装具スロット④・⑤・⑥を選んでください。");
+    }
+
+    private static boolean optionalText(JsonNode value, int maxLength) {
+        return value.isMissingNode() || value.isNull() || value.isTextual() && value.asString().length() <= maxLength;
     }
 
     private static String clean(String value) {

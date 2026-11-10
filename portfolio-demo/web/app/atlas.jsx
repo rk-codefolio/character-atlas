@@ -69,34 +69,51 @@ function CharacterBadges({ character, options }) {
   </span>;
 }
 
-function CharacterList({ open, options }) {
-  const [name, setName] = useState("");
-  const [stat, setStat] = useState("");
-  const [direction, setDirection] = useState("DESC");
-  const [archiveDirection, setArchiveDirection] = useState("ASC");
+function CharacterList({ options, initial }) {
+  const initialStat = Object.hasOwn(STATS, initial.stat) ? initial.stat : "";
+  const [filters, setFilters] = useState({
+    name: initial.name, stat: initialStat,
+    direction: initialStat ? initial.direction ?? "DESC" : "DESC",
+    archiveDirection: initialStat ? "ASC" : initial.direction ?? "ASC",
+  });
+  const { name, stat, direction, archiveDirection } = filters;
   const state = useCatalog("characters", [...(name ? [["name", name]] : []),
     ...(stat ? [["stat", stat], ["direction", direction]] : [["archiveDirection", archiveDirection]])]);
+  function update(change) {
+    const next = { ...filters, ...change };
+    setFilters(next);
+    const query = new URLSearchParams();
+    if (next.name) query.set("name", next.name);
+    if (next.stat) {
+      query.set("stat", next.stat);
+      query.set("direction", next.direction);
+    } else if (next.archiveDirection !== "ASC") {
+      query.set("direction", next.archiveDirection);
+    }
+    window.history.replaceState(null, "", query.size ? "/?" + query : "/");
+  }
   return <>
     <h1>渡り手一覧</h1>
     <p className="caption">航海ランク6・Lv.50・装備なし</p>
     <div className="controls">
-      <label>渡り手名<input type="search" value={name} onChange={event => setName(event.target.value)} /></label>
-      <label>並び替え<select value={stat} onChange={event => setStat(event.target.value)}>
+      <label>渡り手名<input type="search" maxLength={80} value={name} onChange={event => update({ name: event.target.value })} /></label>
+      <label>並び替え<select value={stat} onChange={event => update({ stat: event.target.value })}>
         <option value="">図鑑順</option>{Object.entries(STATS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <label>順序<select value={stat ? direction : archiveDirection} onChange={event => (stat ? setDirection : setArchiveDirection)(event.target.value)}>
+      <label>順序<select value={stat ? direction : archiveDirection}
+        onChange={event => update({ [stat ? "direction" : "archiveDirection"]: event.target.value })}>
         <option value="DESC">降順</option><option value="ASC">昇順</option>
       </select></label>
     </div>
     <Status state={state} />
     <ul className="character-grid">{state.value?.map(character => <li key={character.id}>
-      <button className="character-card" onClick={() => open(character.id)}>
+      <Link className="character-card" href={"/characters/" + encodeURIComponent(character.id)} prefetch={false}>
         <Portrait character={character} />
         <span className="card-copy"><strong>{character.name}</strong>
           <CharacterBadges character={character} options={options} />
           {stat && <span className="caption">{STATS[stat]} {formatStat(stat, character.stats[stat])}</span>}
         </span>
-      </button>
+      </Link>
     </li>)}</ul>
   </>;
 }
@@ -150,21 +167,38 @@ function ConditionPicker({ options, selected, apply }) {
   </>;
 }
 
-function DetailedSearch({ open, options, initialMode, initialTerms }) {
+function searchParams({ mode, terms, groups, role, content }) {
+  const query = new URLSearchParams();
+  if (mode !== "AND") query.set("mode", mode);
+  if (role) query.set("role", role);
+  for (const id of terms) query.append("term", id);
+  for (const label of groups) query.append("group", label);
+  for (const id of content) query.append("content", id);
+  return query;
+}
+
+function DetailedSearch({ options, initial }) {
   const terms = useCatalog("terms", [["shared", "true"]]);
+  const allTerms = useCatalog("terms");
   const contentOptions = useCatalog("search-contents");
-  const [selection, setSelected] = useState(null);
-  const [mode, setMode] = useState(initialMode);
-  const [role, setRole] = useState("");
-  const [content, setContent] = useState([]);
-  const allTerms = useCatalog(selection === null && initialTerms.length ? "terms" : null);
-  const selected = selection ?? [...new Set((allTerms.value ?? [])
-    .filter(term => initialTerms.includes(term.id)).map(term => term.label))];
-  const result = useCatalog(selection === null && initialTerms.length && !allTerms.value ? null : "search",
-    [["mode", mode], ...(role ? [["role", role]] : []),
-    ...content.map(id => ["content", id]),
-    ...selected.map(label => ["group", label])]);
-  const labels = new Map((terms.value ?? []).map(row => [row.id, row.label]));
+  const [filters, setFilters] = useState(initial);
+  const { mode, role, content } = filters;
+  const labels = new Map((allTerms.value ?? []).map(row => [row.id, row.label]));
+  const selected = [...new Set([...filters.groups, ...filters.terms.map(id => labels.get(id)).filter(Boolean)])];
+  const result = useCatalog(allTerms.value ? "search" : null, [...searchParams({
+    ...filters, terms: filters.terms.filter(id => labels.has(id)),
+  })]);
+  function update(change) {
+    const next = { ...filters, ...change };
+    setFilters(next);
+    const query = searchParams(next);
+    window.history.replaceState(null, "", query.size ? "/search?" + query : "/search");
+  }
+  function setSelected(groups) {
+    const directTerms = filters.terms.filter(id => groups.includes(labels.get(id)) && !filters.groups.includes(labels.get(id)));
+    const directLabels = new Set(directTerms.map(id => labels.get(id)));
+    update({ terms: directTerms, groups: groups.filter(label => !directLabels.has(label)) });
+  }
   const available = new Map();
   for (const row of terms.value ?? []) {
     if (!available.has(row.label) || row.kind === "EFFECT") {
@@ -179,17 +213,17 @@ function DetailedSearch({ open, options, initialMode, initialTerms }) {
     <p className="caption">役割や、複数の渡り手が持つ効果・CD操作で絞り込めます。</p>
     <div className="controls search-controls">
       <ConditionPicker options={searchOptions} selected={selected} apply={setSelected} />
-      <label>役割<select value={role} onChange={event => setRole(event.target.value)}>
+      <label>役割<select value={role} onChange={event => update({ role: event.target.value })}>
         <option value="">すべての役割</option>
         {ROLE_ORDER.filter(label => options?.roles[label]).map(label => <option key={label}>{label}</option>)}
       </select></label>
-      <MultiChoices label="コンテンツ関連投稿" items={contentOptions.value ?? []} selected={content} apply={setContent} />
-      <label>条件の組み合わせ<select value={mode} onChange={event => setMode(event.target.value)}>
+      <MultiChoices label="コンテンツ関連投稿" items={contentOptions.value ?? []} selected={content} apply={content => update({ content })} />
+      <label>条件の組み合わせ<select value={mode} onChange={event => update({ mode: event.target.value })}>
         <option value="AND">すべて (AND)</option><option value="OR">いずれか (OR)</option>
       </select></label>
-      <button type="button" onClick={() => { setSelected([]); setMode("AND"); setRole(""); setContent([]); }}>クリア</button>
+      <button type="button" onClick={() => update({ mode: "AND", role: "", content: [], terms: [], groups: [] })}>クリア</button>
     </div>
-    {terms.error && <Status state={terms} />}
+    {(terms.error || allTerms.error) && <Status state={terms.error ? terms : allTerms} />}
     <ul className="selection" aria-label="選択中の条件">{selected.map(label => <li key={label}>
       <button className={"term " + (available.get(label)?.kind.toLowerCase() ?? "")}
         onClick={() => setSelected(selected.filter(value => value !== label))} aria-label={`${label}を外す`}>{label} ×</button>
@@ -206,7 +240,8 @@ function DetailedSearch({ open, options, initialMode, initialTerms }) {
       }
       return <li key={row.character.id} className="search-row">
         <div className="search-identity"><Portrait character={row.character} />
-          <div className="search-name"><button className="record-link" onClick={() => open(row.character.id)}>{row.character.name}</button>
+          <div className="search-name"><Link className="record-link" href={"/characters/" + encodeURIComponent(row.character.id)}
+            prefetch={false}>{row.character.name}</Link>
             <CharacterBadges character={row.character} options={options} />
             {row.candidateOnly && <span className="candidate">関連候補</span>}
           </div>
@@ -244,7 +279,7 @@ function Contents({ options }) {
   </>;
 }
 
-function Detail({ id, back, options }) {
+function Detail({ id, options }) {
   const route = "characters/" + encodeURIComponent(id);
   const state = useCatalog(route);
   const progress = useCatalog(route + "/progress");
@@ -254,7 +289,7 @@ function Detail({ id, back, options }) {
   const character = state.value;
   const stats = awakened ? character?.maxAwakenedStats : character?.stats;
   return <>
-    <button className="back" onClick={back}>← 戻る</button>
+    <Link href="/" className="back action-link">← 図鑑に戻る</Link>
     <Status state={state} />
     {character && <>
       <div className="profile-heading">
@@ -293,25 +328,13 @@ function Detail({ id, back, options }) {
   </>;
 }
 
-export default function Atlas({ initialScreen = "list", initialCharacter = null, initialMode = "AND", initialTerms = [] }) {
-  const [screen, setScreen] = useState(initialScreen);
-  const [character, setCharacter] = useState(initialCharacter);
+export default function Atlas({ initialScreen: screen = "list", initialCharacter: character = null, listFilters, searchFilters }) {
   const [staff, setStaff] = useState(false);
   const options = useCatalog("review-options");
   const session = useCatalog("admin/session");
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("admin")) setScreen("admin");
-  }, []);
-
-  useEffect(() => {
     setStaff(Boolean(session.value?.owner || session.value?.moderator));
   }, [session.value]);
-
-  function navigate(next) {
-    setCharacter(null);
-    setScreen(next);
-    window.history.replaceState(null, "", next === "admin" ? "/?admin=1" : next === "search" ? "/search" : "/");
-  }
 
   return <>
     <header className="archive-top"><strong><span aria-hidden="true">⬡</span> 風綴りの群島 <span aria-hidden="true">/</span> 渡り手図鑑</strong>
@@ -319,10 +342,10 @@ export default function Atlas({ initialScreen = "list", initialCharacter = null,
     <main className="archive-layout">
       <nav className="archive-nav" aria-label="渡り手図鑑">
         <p className="archive-kicker">INDEX</p>
-        {[["list", "渡り手一覧"], ["search", "詳細検索"], ["contents", "コンテンツ一覧"]].map(([id, label]) =>
-          <button key={id} aria-pressed={screen === id} onClick={() => navigate(id)}>{label}</button>)}
+        {[["list", "/", "渡り手一覧"], ["search", "/search", "詳細検索"], ["contents", "/?contents=1", "コンテンツ一覧"]].map(([id, href, label]) =>
+          <a key={id} href={href} aria-current={!character && screen === id ? "page" : undefined}>{label}</a>)}
         <Link href="/game-rules">ゲーム仕様</Link>
-        {staff && <button aria-pressed={screen === "admin"} onClick={() => navigate("admin")}>管理画面</button>}
+        {staff && <Link href="/?admin=1" aria-current={screen === "admin" ? "page" : undefined}>管理画面</Link>}
       </nav>
       <div className="archive-body">
         {!character && screen === "list" && <section className="archive-hero" aria-label="渡り手図鑑">
@@ -332,12 +355,11 @@ export default function Atlas({ initialScreen = "list", initialCharacter = null,
           <p>渡り手のスキル、効果、ビルドを調べる。</p>
         </section>}
         <section className="panel">
-          <div hidden={!!character || screen !== "list"}><CharacterList open={setCharacter} options={options.value} /></div>
-          {screen === "search" && <div hidden={!!character}><DetailedSearch open={setCharacter} options={options.value}
-            initialMode={initialMode} initialTerms={initialTerms} /></div>}
+          {!character && screen === "list" && <CharacterList initial={listFilters} options={options.value} />}
+          {screen === "search" && <DetailedSearch initial={searchFilters} options={options.value} />}
           {screen === "contents" && <Contents options={options.value} />}
           {screen === "admin" && <Admin options={options.value} onLogout={() => setStaff(false)} />}
-          {character && <Detail key={character} id={character} back={() => setCharacter(null)} options={options.value} />}
+          {character && <Detail key={character} id={character} options={options.value} />}
         </section>
       </div>
     </main>

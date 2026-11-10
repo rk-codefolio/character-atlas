@@ -54,16 +54,31 @@ AIには、修正後の導線と操作手順を具体化し、実際の画面を
 
 ## Codexコードレビュー
 
-公開版の初回コミットを対象に、Codex CLIの `codex review` でコードレビューを実施しました。以下は指摘の要約です。優先度はCodexが付けたものです。[レビュー対象コミット](https://github.com/rk-codefolio/character-atlas/commit/df9eb649e3813264b154db3e207aaba1cfbc70e8)
+第1回は公開版の初回コミットを対象に、Codex CLIの `codex review` でコードレビューを実施しました。以下は指摘の要約です。優先度はCodexが付けたものです。[レビュー対象コミット](https://github.com/rk-codefolio/character-atlas/commit/df9eb649e3813264b154db3e207aaba1cfbc70e8)
 
 | 優先度 | Codexの指摘 | 人間のレビューで確認すること | 状態 |
 | --- | --- | --- | --- |
-| P2 | PostgreSQLの起動チェックが初期化用の一時サーバーに通ると、APIがTCPで接続できる前に起動する可能性がある。[Compose定義](../portfolio-demo/compose.yaml) | 空のDBボリュームから起動し、DBの準備完了後にAPIが起動するか確認する | 未対応 |
-| P2 | OR検索後に「クリア」を押すと、結果は初期状態に戻る一方、画面の選択欄がORのまま残る可能性がある。[検索画面](../portfolio-demo/web/app/search/page.jsx) | ORで検索してからクリアし、選択欄がANDに戻り、次の検索にも反映されるか確認する | 未対応 |
-| P3 | DBに基本値と異なる覚醒後の値があっても、詳細APIの `maxAwakenedStats` に基本値が入る。[DBアダプター](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java) | 覚醒後の値を詳細APIで扱うか、公開版のレスポンスから外すか判断する | 未対応 |
+| P2 | PostgreSQLの起動チェックが初期化用の一時サーバーに通ると、APIがTCPで接続できる前に起動する可能性がある。[Compose定義](../portfolio-demo/compose.yaml) | 空のDBボリュームから起動し、DBの準備完了後にAPIが起動するか確認する | PR #2で修正 |
+| P2 | OR検索後に「クリア」を押すと、結果は初期状態に戻る一方、画面の選択欄がORのまま残る可能性がある。[検索画面](../portfolio-demo/web/app/search/page.jsx) | ORで検索してからクリアし、選択欄がANDに戻り、次の検索にも反映されるか確認する | PR #2で修正 |
+| P3 | DBに基本値と異なる覚醒後の値があっても、詳細APIの `maxAwakenedStats` に基本値が入る。[DBアダプター](../portfolio-demo/src/main/java/dev/characteratlas/archipelago/PostgresCatalog.java) | 覚醒後の値を詳細APIで扱うか、公開版のレスポンスから外すか判断する | PR #2で修正 |
 
-このレビューはコードを読んだ時点の指摘です。人間による再現確認と採否の判断は、上の確認項目を使って進めます。
+初回レビューへの対応はPR #2にまとめています。[初回の改善PR](https://github.com/rk-codefolio/character-atlas/pull/2)
 
 ## 公開版の機能を見直した経緯
 
 初回公開版を確認した私は、図鑑だけでは設計・実装の範囲が伝わらないと判断しました。公開するデータや世界観を架空に差し替えつつ、検索の共通基盤、REST API、投稿・通報・管理といったアプリの機能を揃えるようCodexに依頼しました。Codexは機能とAPIを照合し、架空データの初期登録とDBを使う統合テストを追加しました。[構成図と仕様](ARCHITECTURE.md)
+
+## Codexコードレビュー第2回
+
+機能拡張をマージした `8b2520d` を対象に、初回公開後の差分をCodex CLIの `codex review` で確認しました。優先度はCodexが付けたものです。[レビュー対象コミット](https://github.com/rk-codefolio/character-atlas/commit/8b2520d)
+
+| 優先度 | 指摘 | 対応 |
+| --- | --- | --- |
+| P1 | 投稿の任意欄にオブジェクトなどを送ると、表示画面を壊せる | APIで型と長さを検証し、既存の不正な任意欄は画面で安全に扱う |
+| P2 | 図鑑と検索結果から開いた詳細のURLを共有できない | 個別ページへのリンクを使い、再読み込みとブラウザの「戻る」に対応 |
+| P2 | 以前の一覧URLで名前と並び順が復元されない | URLから一覧条件を初期化し、操作後の条件もURLに反映 |
+| P2 | 通報時の記録にビルドや攻略の詳細が残らない | 投稿詳細を通報時のスナップショットに保存し、管理画面で表示 |
+| P3 | 以前の検索URLで一部のタグの該当スキルが見えない | 根拠の表示には全条件のラベルを使用し、検索候補の絞り込みと分離 |
+| P3 | Discord通知が文字数上限を超える設定を受け付ける | 起動時に実際の通知文の長さを検証し、上限を超える設定を拒否 |
+
+[DiscordのWebhook仕様](https://docs.discord.com/developers/resources/webhook#execute-webhook)

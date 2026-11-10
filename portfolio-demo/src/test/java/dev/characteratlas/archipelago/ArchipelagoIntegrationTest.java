@@ -17,10 +17,13 @@ import javax.sql.DataSource;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -154,6 +157,50 @@ class ArchipelagoIntegrationTest {
                 .andExpect(header().string("Location", startsWith("https://discord.com/oauth2/authorize")));
         assertEquals(Map.of("parse", List.of(), "users", List.of("1111", "2222")),
                 DiscordReportNotifications.payload(List.of("1111", "2222"), ORIGIN, reportId).get("allowed_mentions"));
+    }
+
+    @Test
+    void rejectsDetailsThatCannotBeRendered() throws Exception {
+        for (String details : List.of("{\"stage\":{}}", "{\"contentTags\":{}}", "{\"contentTags\":[{}]}")) {
+            String guide = """
+                    {"kind":"CONTENT","subject":"route-01","title":"攻略","body":"確認用","details":%s}
+                    """.formatted(details);
+            mvc.perform(post("/api/posts").header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
+                    .content(guide)).andExpect(status().isBadRequest());
+        }
+        String build = """
+                {"kind":"BUILD","subject":"marea","title":"装備","body":"",
+                 "details":{"shell":"潮風の羅針盤","matrices":[{"name":"追風"},{"name":"灯継"}],
+                  "mainStats":["HP%","攻撃力%","効果命中"],"targetStats":{}}}
+                """;
+        mvc.perform(post("/api/posts").header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
+                .content(build)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void retainsPostDetailsInTheReportAfterTheOriginalChanges() throws Exception {
+        String guide = """
+                {"kind":"CONTENT","subject":"route-01","title":"攻略","body":"確認用",
+                 "details":{"stage":"通報時の難易度","relatedCharacters":["marea"]}}
+                """;
+        String id = mvc.perform(post("/api/posts").header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
+                        .content(guide)).andExpect(status().isCreated()).andReturn().getResponse()
+                .getContentAsString().replace("\"", "");
+        mvc.perform(post("/api/posts/{id}/reports", id).header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"OTHER\"}")).andExpect(status().isAccepted());
+        UUID postId = UUID.fromString(id);
+        jdbc.update("UPDATE review_post SET details = '{}'::jsonb WHERE post_id = ?", postId);
+        assertEquals("通報時の難易度", jdbc.queryForObject("""
+                SELECT post_snapshot->'details'->>'stage' FROM post_report WHERE post_id = ?
+                """, String.class, postId));
+    }
+
+    @Test
+    void rejectsWebhookConfigurationsThatCannotSendTheNotification() {
+        String moderators = LongStream.range(1_000_000_000_000_000_000L, 1_000_000_000_000_000_090L)
+                .mapToObj(Long::toString).collect(Collectors.joining(","));
+        assertThrows(IllegalArgumentException.class, () -> new DiscordReportNotifications(
+                jdbc, "https://discord.com/api/webhooks/1/test-only", ORIGIN, "1111", moderators));
     }
 
     private static MockHttpSession session(String id) {
