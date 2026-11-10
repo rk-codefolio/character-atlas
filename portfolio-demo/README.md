@@ -5,7 +5,7 @@
 ## 使用バージョン
 
 - Java 25 LTS、Gradle 9.9.0、JUnit 6.1.3
-- Spring Boot 4.1.2、Flyway 13.12.1、PostgreSQL 18.6、pgJDBC 42.7.14
+- Spring Boot 4.1.2、MyBatis Spring Boot Starter 4.0.0、Flyway 13.12.1、PostgreSQL 18.6、pgJDBC 42.7.14
 - Node.js 26 LTS、Next.js 16.4.6、React 19.3.1
 
 ## Dockerで起動する

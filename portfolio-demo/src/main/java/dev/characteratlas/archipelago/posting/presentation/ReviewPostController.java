@@ -8,7 +8,6 @@ import dev.characteratlas.archipelago.posting.application.Post;
 import dev.characteratlas.archipelago.posting.application.PostService;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import dev.characteratlas.archipelago.posting.infrastructure.PostSelections;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
