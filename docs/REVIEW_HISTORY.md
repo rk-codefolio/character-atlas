@@ -33,3 +33,5 @@
 
 - **PostgreSQLの起動順**。初期化に使う一時サーバーでも従来の起動確認が通る可能性があり、APIがTCPで接続できる時点とのずれがあった。起動確認にTCPの接続先を指定した。確認する場合は、検証用の空のDBボリュームでComposeを起動し、DBの初期化後にAPIが起動することを見る。[レビュー指摘](AI_DEVELOPMENT.md#codexコードレビュー) · [修正差分](https://github.com/rk-codefolio/character-atlas/pull/2/files)
 - **投稿詳細の型を保つ境界**。ユースケースから永続化へ渡す途中で投稿の詳細が型を失っていた。種別ごとの詳細型は投稿モデルに置き、図鑑との照合はユースケース、既存のJSON形式への変換は永続化アダプターに置いた。テストでは入力の種別や値を検証し、通報後に元投稿が変わっても当初の攻略詳細が保存されることを確認する。[修正差分](https://github.com/rk-codefolio/character-atlas/pull/10/files) · [統合テスト](../archipelago-app/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
+
+詳しい事後検証と設計の振り返りは、[PostgreSQL起動判定の観測](POSTGRES_STARTUP.md)と[投稿詳細の型設計と変更範囲](POSTING_DESIGN.md)にまとめています。
