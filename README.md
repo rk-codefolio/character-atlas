@@ -35,7 +35,7 @@ Dockerで起動したら、[AND検索](http://localhost:3000/search?term=guard&t
 
 初回公開までの人間の作業時間は **約5時間**（対話履歴からの概算）です。[見積もりの内訳と対話の試行錯誤](docs/AI_DEVELOPMENT.md) · [公開ソースを使った分析事例](docs/WESNOTH_ANALYSIS.md)
 
-**Codexコードレビュー実施済み**。初回公開時、機能拡張後、人間レビュー対応後に実施しました。[初回の結果](docs/AI_DEVELOPMENT.md#codexコードレビュー) · [第2回](docs/AI_DEVELOPMENT.md#codexコードレビュー第2回) · [第3回](docs/AI_DEVELOPMENT.md#codexコードレビュー第3回)
+開発者本人とCodexの指摘、対応結果、PR差分を一覧にまとめました。[レビューの指摘と対応結果](docs/REVIEW_HISTORY.md)
 
 ## PRごとの検証
 
