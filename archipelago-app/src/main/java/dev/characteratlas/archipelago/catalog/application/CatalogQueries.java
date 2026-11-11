@@ -1,13 +1,20 @@
 package dev.characteratlas.archipelago.catalog.application;
 
-import dev.characteratlas.application.CharacterCatalog;
-import dev.characteratlas.application.CharacterSummary;
-import dev.characteratlas.application.Direction;
-import dev.characteratlas.application.MatchMode;
-import dev.characteratlas.application.SearchResult;
-import dev.characteratlas.archipelago.shared.application.UseCaseException;
-import dev.characteratlas.domain.DomainValidationException;
-import dev.characteratlas.domain.Stat;
+import dev.characteratlas.application.search.CharacterCatalog;
+import dev.characteratlas.application.search.CharacterSummary;
+import dev.characteratlas.application.search.Direction;
+import dev.characteratlas.application.search.MatchMode;
+import dev.characteratlas.application.search.SearchResult;
+import dev.characteratlas.archipelago.catalog.application.options.CatalogOptions;
+import dev.characteratlas.archipelago.catalog.application.options.Content;
+import dev.characteratlas.archipelago.catalog.application.progress.EffectTip;
+import dev.characteratlas.archipelago.catalog.application.progress.Progress;
+import dev.characteratlas.archipelago.catalog.application.search.CatalogQueryError;
+import dev.characteratlas.archipelago.catalog.application.search.SearchContentOptions;
+import dev.characteratlas.archipelago.catalog.application.search.TaggedPostIndex;
+import dev.characteratlas.archipelago.shared.application.error.UseCaseException;
+import dev.characteratlas.domain.character.Stat;
+import dev.characteratlas.domain.validation.DomainValidationException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -53,7 +60,7 @@ public class CatalogQueries {
   }
 
   /** キャラクターを扱う。 */
-  public dev.characteratlas.domain.CharacterProfile character(String id) {
+  public dev.characteratlas.domain.character.CharacterProfile character(String id) {
     return catalog.detail(id).orElseThrow(() -> UseCaseException.notFound());
   }
 
@@ -63,7 +70,7 @@ public class CatalogQueries {
   }
 
   /** termsを扱う。 */
-  public List<dev.characteratlas.domain.SearchTerm> terms(boolean shared) {
+  public List<dev.characteratlas.domain.search.SearchTerm> terms(boolean shared) {
     return shared ? catalog.sharedTerms(CD_TERMS) : catalog.terms();
   }
 
@@ -76,7 +83,8 @@ public class CatalogQueries {
                 skill ->
                     skill.matches().stream()
                         .filter(match ->
-                            match.evidence() == dev.characteratlas.domain.Evidence.DECLARED_EFFECT)
+                            match.evidence()
+                                == dev.characteratlas.domain.skill.Evidence.DECLARED_EFFECT)
                         .flatMap(match -> options.effects(match.termId()).stream())
                         .distinct()
                         .toList()));
@@ -106,7 +114,7 @@ public class CatalogQueries {
       if (role != null && !role.isBlank()) {
         // members。
         var members = options.get().roles().get(role);
-        if (members == null) throw new DomainValidationException("不明な役割があります");
+        if (members == null) throw new DomainValidationException(CatalogQueryError.UNKNOWN_ROLE);
         results = results.filter(result -> members.contains(result.character().id()));
       }
       if (content != null && !content.isEmpty()) {
@@ -115,7 +123,8 @@ public class CatalogQueries {
             searchContents.available().stream()
                 .map(Content::id)
                 .collect(Collectors.toUnmodifiableSet());
-        if (!allowed.containsAll(content)) throw new DomainValidationException("コンテンツが見つかりません。");
+        if (!allowed.containsAll(content))
+          throw new DomainValidationException(CatalogQueryError.UNKNOWN_CONTENT);
         // tagged。
         var tagged = posts.taggedCharacters(content);
         results =
@@ -124,8 +133,8 @@ public class CatalogQueries {
                     .thenComparing(result -> !tagged.contains(result.character().id())));
       }
       return results.toList();
-    } catch (IllegalArgumentException e) {
-      throw UseCaseException.invalid(e.getMessage());
+    } catch (DomainValidationException e) {
+      throw UseCaseException.invalid(e.error());
     }
   }
 }

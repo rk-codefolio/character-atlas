@@ -11,7 +11,9 @@
 
 ## Codexを使った開発
 
-使用ツールは **OpenAI Codex** です。私が要件と優先順位を決め、画面を見ながら仕様を修正しました。Codexには資料の照合、設計案、実装、JUnitテスト、Dockerでの動作確認を依頼しました。
+**使用ツール：OpenAI Codex**
+
+このプロジェクトは、私が自然言語で作業を指示し、Codex が資料の照合、設計案の作成、コードの実装、JUnit テストの作成・実行、Docker での動作確認を担当する形で開発しました。私は要件と優先順位を決め、画面やコードをレビューして改善方針を決定しました。
 
 私が工夫した点は、検索で迷ったときの扱いを決め、閲覧者が実際に操作して確認できる形にしたことです。
 
@@ -27,7 +29,7 @@
 
 架空の技「夜渡りの灯」は「回復」を明示し、「護り」とは関連候補で結び付けています。**護りと回復のAND検索**では、両方が明示されたマレアとユラの後に、トワが「関連候補」として並びます。**OR検索**では、トワも回復を明示しているため、明示一致のグループに入ります。表示順位を見れば、元の調査で区別した根拠が検索結果にどう反映されるか確認できます。
 
-[検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java) · [架空データの初期登録](archipelago-app/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [全機能版の追加データ](archipelago-app/src/main/resources/db/migration/V101__voyager_atlas.sql) · [画面での試し方](archipelago-app/README.md#試し方)
+[検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/search/CharacterCatalogTest.java) · [架空データの初期登録](archipelago-app/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [全機能版の追加データ](archipelago-app/src/main/resources/db/migration/V101__voyager_atlas.sql) · [画面での試し方](archipelago-app/README.md#試し方)
 
 ## 共通基盤のテスト
 

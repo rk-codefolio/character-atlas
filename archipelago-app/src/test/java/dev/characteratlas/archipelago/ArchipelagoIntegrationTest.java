@@ -12,8 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
-import dev.characteratlas.archipelago.moderation.infrastructure.DiscordReportNotifications;
+import dev.characteratlas.archipelago.moderation.infrastructure.discord.DiscordModerationAccess;
+import dev.characteratlas.archipelago.moderation.infrastructure.discord.DiscordReportNotifications;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -338,7 +338,7 @@ class ArchipelagoIntegrationTest {
             .mapToObj(Long::toString)
             .collect(Collectors.joining(","));
     assertThrows(
-        dev.characteratlas.archipelago.shared.application.InfrastructureException.class,
+        dev.characteratlas.archipelago.shared.application.error.InfrastructureException.class,
         () ->
             DiscordReportNotifications.validateConfiguration(
                 "https://discord.com/api/webhooks/1/test-only",

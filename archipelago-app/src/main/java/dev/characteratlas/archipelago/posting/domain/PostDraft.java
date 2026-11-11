@@ -4,7 +4,7 @@ import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
 import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
 import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
 import dev.characteratlas.archipelago.posting.domain.details.PostingDetails;
-import dev.characteratlas.domain.DomainChecks;
+import dev.characteratlas.domain.validation.DomainChecks;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -25,7 +25,7 @@ public record PostDraft(
   /**
    * 入力を正規化し、この型の生成条件を検証する。
    *
-   * @throws dev.characteratlas.domain.DomainValidationException この型が定める生成条件に違反する場合
+   * @throws dev.characteratlas.domain.validation.DomainValidationException この型が定める生成条件に違反する場合
    * @throws NullPointerException 必須の参照やコレクション要素がnullの場合
    */
   public PostDraft {
@@ -41,17 +41,17 @@ public record PostDraft(
           case BuildDetails(_, _, _, _) -> PostKind.BUILD;
           case GuideDetails(_, _) -> PostKind.CONTENT;
         };
-    DomainChecks.require(kind == detailKind, PostValidationMessages.KIND_DETAILS_MISMATCH);
+    DomainChecks.require(kind == detailKind, PostValidationError.KIND_DETAILS_MISMATCH);
     title = clean(title);
     body = clean(body);
     DomainChecks.require(
-        title.length() <= 120 && body.length() <= 8000, PostValidationMessages.TEXT_TOO_LONG);
+        title.length() <= 120 && body.length() <= 8000, PostValidationError.TEXT_TOO_LONG);
     DomainChecks.require(
-        subject.matches("[a-z0-9][a-z0-9-]{0,39}"), PostValidationMessages.INVALID_SUBJECT);
+        subject.matches("[a-z0-9][a-z0-9-]{0,39}"), PostValidationError.INVALID_SUBJECT);
     DomainChecks.require(
-        kind == PostKind.COMMENT || !title.isEmpty(), PostValidationMessages.TITLE_REQUIRED);
+        kind == PostKind.COMMENT || !title.isEmpty(), PostValidationError.TITLE_REQUIRED);
     DomainChecks.require(
-        kind == PostKind.BUILD || !body.isEmpty(), PostValidationMessages.BODY_REQUIRED);
+        kind == PostKind.BUILD || !body.isEmpty(), PostValidationError.BODY_REQUIRED);
   }
 
   /** cleanを扱う。 */

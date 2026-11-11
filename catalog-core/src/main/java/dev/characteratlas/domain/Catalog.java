@@ -1,5 +1,7 @@
 package dev.characteratlas.domain;
 
+import dev.characteratlas.domain.character.CharacterProfile;
+import dev.characteratlas.domain.search.SearchTerm;
 import java.util.List;
 
 /**

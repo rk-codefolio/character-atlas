@@ -1,7 +1,7 @@
 package dev.characteratlas.archipelago.posting.domain.details;
 
-import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
-import dev.characteratlas.domain.DomainChecks;
+import dev.characteratlas.archipelago.posting.domain.PostValidationError;
+import dev.characteratlas.domain.validation.DomainChecks;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,7 +16,7 @@ public record MatrixSelection(
   /**
    * 入力を正規化し、この型の生成条件を検証する。
    *
-   * @throws dev.characteratlas.domain.DomainValidationException この型が定める生成条件に違反する場合
+   * @throws dev.characteratlas.domain.validation.DomainValidationException この型が定める生成条件に違反する場合
    * @throws NullPointerException 必須の参照やコレクション要素がnullの場合
    */
   public MatrixSelection {
@@ -24,6 +24,6 @@ public record MatrixSelection(
     Objects.requireNonNull(points);
     DomainChecks.require(
         !(points.filter(value -> value.signum() < 0).isPresent()),
-        PostValidationMessages.NEGATIVE_MATRIX_POINTS);
+        PostValidationError.NEGATIVE_MATRIX_POINTS);
   }
 }

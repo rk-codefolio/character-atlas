@@ -4,11 +4,11 @@ import dev.characteratlas.archipelago.posting.application.Post;
 import dev.characteratlas.archipelago.posting.application.PostStore;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
+import dev.characteratlas.archipelago.posting.domain.PostValidationError;
 import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
 import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
 import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
-import dev.characteratlas.archipelago.shared.application.UseCaseException;
+import dev.characteratlas.archipelago.shared.application.error.UseCaseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,8 +112,7 @@ public class MyBatisPostStore implements PostStore {
     }
     // SQLパラメーターに渡すJSON文字列。
     String encoded = details.toString();
-    if (encoded.length() > 12000)
-      throw UseCaseException.invalid(PostValidationMessages.TEXT_TOO_LONG);
+    if (encoded.length() > 12000) throw UseCaseException.invalid(PostValidationError.TEXT_TOO_LONG);
     return new PostWrite(
         draft.id(), draft.kind().name(), draft.subject(), draft.title(), draft.body(), encoded);
   }

@@ -1,16 +1,17 @@
 package dev.characteratlas.archipelago.posting.application;
 
-import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
-import dev.characteratlas.archipelago.catalog.application.Content;
-import dev.characteratlas.archipelago.moderation.application.AuditLog;
+import dev.characteratlas.archipelago.catalog.application.options.CatalogOptions;
+import dev.characteratlas.archipelago.catalog.application.options.Content;
+import dev.characteratlas.archipelago.moderation.application.audit.AuditLog;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
+import dev.characteratlas.archipelago.posting.domain.PostValidationError;
 import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
 import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
 import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
 import dev.characteratlas.archipelago.posting.domain.details.MatrixSelection;
-import dev.characteratlas.archipelago.shared.application.UseCaseException;
+import dev.characteratlas.archipelago.shared.application.error.UseCaseException;
+import dev.characteratlas.domain.validation.ErrorMessage;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -71,35 +72,33 @@ public class PostService {
   private void validate(PostDraft draft) {
     // 図鑑の登録済みコンテンツ識別子。
     var contentIds = options.contents().stream().map(Content::id).toList();
-    require(
-        contentIds.containsAll(draft.contentTags()), PostValidationMessages.CONTENT_TAG_NOT_FOUND);
+    require(contentIds.containsAll(draft.contentTags()), PostValidationError.CONTENT_TAG_NOT_FOUND);
     switch (draft.details()) {
       case GuideDetails(_, var characters) -> {
-        require(contentIds.contains(draft.subject()), PostValidationMessages.CONTENT_REQUIRED);
+        require(contentIds.contains(draft.subject()), PostValidationError.CONTENT_REQUIRED);
         require(
             characters.stream().allMatch(store::characterExists),
-            PostValidationMessages.RELATED_CHARACTER_NOT_FOUND);
+            PostValidationError.RELATED_CHARACTER_NOT_FOUND);
       }
       case BuildDetails(var shell, var matrices, var stats, _) -> {
-        require(store.characterExists(draft.subject()), PostValidationMessages.CHARACTER_NOT_FOUND);
+        require(store.characterExists(draft.subject()), PostValidationError.CHARACTER_NOT_FOUND);
         // ビルドで選択できる装具の一覧。
         var equipment = options.get();
-        require(equipment.shells().contains(shell), PostValidationMessages.SHELL_REQUIRED);
+        require(equipment.shells().contains(shell), PostValidationError.SHELL_REQUIRED);
         // 登録済みの航路紋の名称。
         var available = equipment.matrices().stream().map(matrix -> matrix.name()).toList();
         require(
             available.containsAll(matrices.stream().map(MatrixSelection::name).toList()),
-            PostValidationMessages.DUPLICATE_MATRICES);
-        require(equipment.mainStats().containsAll(stats), PostValidationMessages.MAIN_STAT_SLOTS);
+            PostValidationError.DUPLICATE_MATRICES);
+        require(equipment.mainStats().containsAll(stats), PostValidationError.MAIN_STAT_SLOTS);
       }
       case CommentDetails() ->
-          require(
-              store.characterExists(draft.subject()), PostValidationMessages.CHARACTER_NOT_FOUND);
+          require(store.characterExists(draft.subject()), PostValidationError.CHARACTER_NOT_FOUND);
     }
   }
 
   /** 利用者が指定した項目が図鑑にない場合はユースケースを中断する。 */
-  private static void require(boolean condition, String message) {
+  private static void require(boolean condition, ErrorMessage message) {
     if (!condition) throw UseCaseException.invalid(message);
   }
 }

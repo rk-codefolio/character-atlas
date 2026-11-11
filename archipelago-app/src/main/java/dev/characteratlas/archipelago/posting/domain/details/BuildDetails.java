@@ -1,7 +1,7 @@
 package dev.characteratlas.archipelago.posting.domain.details;
 
-import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
-import dev.characteratlas.domain.DomainChecks;
+import dev.characteratlas.archipelago.posting.domain.PostValidationError;
+import dev.characteratlas.domain.validation.DomainChecks;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,20 +19,20 @@ public record BuildDetails(
   /**
    * 入力を正規化し、この型の生成条件を検証する。
    *
-   * @throws dev.characteratlas.domain.DomainValidationException この型が定める生成条件に違反する場合
+   * @throws dev.characteratlas.domain.validation.DomainValidationException この型が定める生成条件に違反する場合
    * @throws NullPointerException 必須の参照やコレクション要素がnullの場合
    */
   public BuildDetails {
     matrices = List.copyOf(matrices);
     mainStats = List.copyOf(mainStats);
     DomainChecks.require(
-        !(matrices.size() < 2 || matrices.size() > 9), PostValidationMessages.MATRIX_COUNT);
+        !(matrices.size() < 2 || matrices.size() > 9), PostValidationError.MATRIX_COUNT);
     DomainChecks.require(
         !(matrices.stream().map(MatrixSelection::name).distinct().count() != matrices.size()),
-        PostValidationMessages.DUPLICATE_MATRICES);
-    DomainChecks.require(!(mainStats.size() != 3), PostValidationMessages.MAIN_STAT_SLOTS);
+        PostValidationError.DUPLICATE_MATRICES);
+    DomainChecks.require(!(mainStats.size() != 3), PostValidationError.MAIN_STAT_SLOTS);
     DomainChecks.require(
         !(targetStats.filter(value -> value.length() > 240).isPresent()),
-        PostValidationMessages.TARGET_STATS_TOO_LONG);
+        PostValidationError.TARGET_STATS_TOO_LONG);
   }
 }
