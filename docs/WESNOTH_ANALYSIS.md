@@ -29,7 +29,7 @@
 
 ## 検索設計とのつながり
 
-この4体の範囲では、「回復」の明示一致はShaman・Druid・White Mage、「解毒」の明示一致はDruid・White Mageになります。「毒対策」という広い分類を別に設けるなら、抑制と解毒の両方を関連づけられます。検索で「回復と解毒」をAND指定したときに抑制だけを解毒として扱わないため、効果IDと検索用の分類、根拠をそれぞれ保持します。公開用の架空データでは同じ考え方を「護りと回復」のAND／ORで試せます。 [検索の実装](../catalog-core/src/main/java/dev/characteratlas/application/CharacterCatalog.java) · [操作例](../archipelago-app/README.md#試し方)
+この4体の範囲では、「回復」の明示一致はShaman・Druid・White Mage、「解毒」の明示一致はDruid・White Mageになります。「毒対策」という広い分類を別に設けるなら、抑制と解毒の両方を関連づけられます。検索で「回復と解毒」をAND指定したときに抑制だけを解毒として扱わないため、効果IDと検索用の分類、根拠をそれぞれ保持します。公開用の架空データでは同じ考え方を「護りと回復」のAND／ORで試せます。 [検索の実装](../catalog-core/src/main/java/dev/characteratlas/application/search/CharacterCatalog.java) · [操作例](../archipelago-app/README.md#試し方)
 
 ## 照合の再現手順
 

@@ -1,19 +1,26 @@
 package dev.characteratlas.archipelago.posting.presentation;
 
-import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
-import dev.characteratlas.archipelago.catalog.application.Content;
-import dev.characteratlas.archipelago.catalog.application.Options;
-import dev.characteratlas.archipelago.catalog.application.SearchContentOptions;
-import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
+import dev.characteratlas.archipelago.catalog.application.options.CatalogOptions;
+import dev.characteratlas.archipelago.catalog.application.options.Content;
+import dev.characteratlas.archipelago.catalog.application.options.Options;
+import dev.characteratlas.archipelago.catalog.application.search.SearchContentOptions;
+import dev.characteratlas.archipelago.moderation.infrastructure.discord.DiscordModerationAccess;
 import dev.characteratlas.archipelago.posting.application.Post;
 import dev.characteratlas.archipelago.posting.application.PostService;
-import dev.characteratlas.archipelago.posting.domain.BuildDetails;
-import dev.characteratlas.archipelago.posting.domain.CommentDetails;
-import dev.characteratlas.archipelago.posting.domain.GuideDetails;
-import dev.characteratlas.archipelago.posting.domain.MatrixSelection;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import dev.characteratlas.archipelago.posting.domain.PostingDetails;
+import dev.characteratlas.archipelago.posting.domain.PostValidationError;
+import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.details.MatrixSelection;
+import dev.characteratlas.archipelago.posting.domain.details.PostingDetails;
+import dev.characteratlas.archipelago.posting.presentation.request.PostRequest;
+import dev.characteratlas.archipelago.posting.presentation.request.PostRequestError;
+import dev.characteratlas.archipelago.posting.presentation.request.PostSelections;
+import dev.characteratlas.archipelago.shared.presentation.error.ApiRequestException;
+import dev.characteratlas.domain.validation.DomainValidationException;
+import dev.characteratlas.domain.validation.ErrorMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +36,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 
 /** Reviewの投稿のREST APIを表す。 */
@@ -112,8 +118,8 @@ public class ReviewPostController {
               && post.subject() != null
               && post.details() != null
               && post.details().isObject(),
-          "投稿先か入力項目が不正です。");
-      require(post.details().toString().length() <= 12000, "入力が長すぎます。");
+          PostValidationError.INVALID_SUBJECT);
+      require(post.details().toString().length() <= 12000, PostValidationError.TEXT_TOO_LONG);
       // 投稿種別ごとにREST入力をドメインの値に変換する。
       PostingDetails details =
           switch (post.kind()) {
@@ -121,7 +127,7 @@ public class ReviewPostController {
             case BUILD -> build(post.details());
             case CONTENT ->
                 new GuideDetails(
-                    optionalText(post.details().path("stage"), "ステージ・難易度"),
+                    optionalText(post.details().path("stage"), PostRequestError.STAGE_NOT_TEXT),
                     selections(post.details(), "relatedCharacters", "relatedCharacter"));
           };
       return new PostDraft(
@@ -132,8 +138,11 @@ public class ReviewPostController {
           post.body(),
           details,
           selections(post.details(), "contentTags", "contentTag"));
+    } catch (DomainValidationException error) {
+      throw error;
     } catch (IllegalArgumentException error) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.getMessage(), error);
+      throw new ApiRequestException(
+          HttpStatus.BAD_REQUEST, PostValidationError.INVALID_SUBJECT, error);
     }
   }
 
@@ -142,7 +151,8 @@ public class ReviewPostController {
     try {
       return PostSelections.read(details, field, legacyField);
     } catch (IllegalArgumentException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+      throw new ApiRequestException(
+          HttpStatus.BAD_REQUEST, PostValidationError.INVALID_SELECTION, e);
     }
   }
 
@@ -150,7 +160,7 @@ public class ReviewPostController {
   private static BuildDetails build(JsonNode details) {
     // matrices。
     var matrices = details.path("matrices");
-    require(matrices.isArray(), "航路紋を2種類以上選んでください。");
+    require(matrices.isArray(), PostValidationError.MATRIX_COUNT);
     // 名称一覧。
     var selections =
         matrices
@@ -162,7 +172,7 @@ public class ReviewPostController {
                   points.isMissingNode()
                       || points.isNull()
                       || points.isIntegralNumber() && points.bigIntegerValue().signum() >= 0,
-                  "ポイントは空欄か0以上の整数にしてください。");
+                  PostValidationError.NEGATIVE_MATRIX_POINTS);
               return new MatrixSelection(
                   matrix.path("name").asString(""),
                   points.isIntegralNumber()
@@ -172,23 +182,23 @@ public class ReviewPostController {
             .toList();
     // 能力値の組み合わせ。
     var stats = details.path("mainStats");
-    require(stats.isArray(), "装具スロット④・⑤・⑥を選んでください。");
+    require(stats.isArray(), PostValidationError.MAIN_STAT_SLOTS);
     return new BuildDetails(
         details.path("shell").asString(""),
         selections,
         stats.valueStream().map(stat -> stat.asString("")).toList(),
-        optionalText(details.path("targetStats"), "目標ステータス"));
+        optionalText(details.path("targetStats"), PostRequestError.TARGET_STATS_NOT_TEXT));
   }
 
   /** 任意の説明文を扱う。 */
-  private static Optional<String> optionalText(JsonNode value, String label) {
+  private static Optional<String> optionalText(JsonNode value, ErrorMessage error) {
     if (value.isMissingNode() || value.isNull()) return Optional.empty();
-    require(value.isTextual(), label + "は文字列で入力してください。");
+    require(value.isTextual(), error);
     return Optional.of(value.asString());
   }
 
   /** 必須条件を確認するを扱う。 */
-  private static void require(boolean condition, String message) {
-    if (!condition) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+  private static void require(boolean condition, ErrorMessage message) {
+    if (!condition) throw new ApiRequestException(HttpStatus.BAD_REQUEST, message);
   }
 }

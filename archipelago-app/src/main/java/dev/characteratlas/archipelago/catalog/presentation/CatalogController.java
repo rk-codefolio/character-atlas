@@ -1,13 +1,13 @@
 package dev.characteratlas.archipelago.catalog.presentation;
 
-import dev.characteratlas.application.CharacterSummary;
-import dev.characteratlas.application.Direction;
-import dev.characteratlas.application.MatchMode;
-import dev.characteratlas.application.SearchResult;
+import dev.characteratlas.application.search.CharacterSummary;
+import dev.characteratlas.application.search.Direction;
+import dev.characteratlas.application.search.MatchMode;
+import dev.characteratlas.application.search.SearchResult;
 import dev.characteratlas.archipelago.catalog.application.CatalogQueries;
-import dev.characteratlas.archipelago.catalog.application.EffectTip;
-import dev.characteratlas.archipelago.catalog.application.Progress;
-import dev.characteratlas.domain.Stat;
+import dev.characteratlas.archipelago.catalog.application.progress.EffectTip;
+import dev.characteratlas.archipelago.catalog.application.progress.Progress;
+import dev.characteratlas.domain.character.Stat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +42,7 @@ class CatalogController {
 
   /** キャラクターを扱う。 */
   @GetMapping("/characters/{id}")
-  dev.characteratlas.domain.CharacterProfile character(@PathVariable String id) {
+  dev.characteratlas.domain.character.CharacterProfile character(@PathVariable String id) {
     return queries.character(id);
   }
 
@@ -54,7 +54,7 @@ class CatalogController {
 
   /** termsを扱う。 */
   @GetMapping("/terms")
-  List<dev.characteratlas.domain.SearchTerm> terms(
+  List<dev.characteratlas.domain.search.SearchTerm> terms(
       @RequestParam(defaultValue = "false") boolean shared) {
     return queries.terms(shared);
   }

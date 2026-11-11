@@ -1,7 +1,7 @@
 package dev.characteratlas.archipelago;
 
 import dev.characteratlas.application.CatalogRepository;
-import dev.characteratlas.application.CharacterCatalog;
+import dev.characteratlas.application.search.CharacterCatalog;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;

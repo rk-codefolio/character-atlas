@@ -40,6 +40,8 @@ flowchart LR
 
 ## コンテキストと依存方向
 
+各ドメインの責務、用語、実装の入口は [ドメイン一覧](DOMAINS.md) を参照してください。
+
 図鑑はスキル・効果と検索根拠を管理します。投稿はコメント・ビルド・攻略の投稿内容と更新を扱います。モデレーションは通報・権限・監査ログを扱います。図鑑から投稿を参照する際は関連キャラクターの識別子だけを取得し、投稿の更新からは監査ポートへ記録します。
 
 RESTコントローラーでHTTPを処理し、ユースケースで更新と監査をまとめます。投稿本文の制約はドメインで検証します。SQLは各コンテキストのインフラ層にあるMyBatis Mapperで扱います。Flywayが既存スキーマと架空データを管理します。
@@ -58,7 +60,7 @@ RESTコントローラーでHTTPを処理し、ユースケースで更新と監
 
 明示された効果・タグと関連候補を保持します。ANDではすべて、ORではいずれかの条件を明示だけで満たす結果を先に表示します。残りの関連候補も表示し、各グループ内は図鑑順です。関連コンテンツの指定時は、各グループ内で投稿が紐づく渡り手を先に表示します。条件未選択では全件を対象にします。
 
-名前は前後の空白を除き、Unicode正規化と小文字化をして照合します。ステータス順の欠損値は昇順・降順とも末尾、同値は図鑑順です。[検索の実装](../catalog-core/src/main/java/dev/characteratlas/application/CharacterCatalog.java) · [検索ルールのテスト](../catalog-core/src/test/java/dev/characteratlas/application/CharacterCatalogTest.java)
+名前は前後の空白を除き、Unicode正規化と小文字化をして照合します。ステータス順の欠損値は昇順・降順とも末尾、同値は図鑑順です。[検索の実装](../catalog-core/src/main/java/dev/characteratlas/application/search/CharacterCatalog.java) · [検索ルールのテスト](../catalog-core/src/test/java/dev/characteratlas/application/search/CharacterCatalogTest.java)
 
 ## REST API
 

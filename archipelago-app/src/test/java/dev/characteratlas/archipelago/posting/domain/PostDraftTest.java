@@ -2,6 +2,10 @@ package dev.characteratlas.archipelago.posting.domain;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.details.MatrixSelection;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
