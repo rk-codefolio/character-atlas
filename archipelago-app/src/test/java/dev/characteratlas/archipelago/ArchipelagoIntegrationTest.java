@@ -338,7 +338,7 @@ class ArchipelagoIntegrationTest {
             .mapToObj(Long::toString)
             .collect(Collectors.joining(","));
     assertThrows(
-        IllegalArgumentException.class,
+        dev.characteratlas.archipelago.shared.application.InfrastructureException.class,
         () ->
             DiscordReportNotifications.validateConfiguration(
                 "https://discord.com/api/webhooks/1/test-only",

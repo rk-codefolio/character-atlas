@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-/** キャラクターの詳細を表す。 */
+/**
+ * 図鑑上のキャラクターの属性、育成値、技の一覧を保持する。
+ *
+ * <p>通常と最大覚醒後の能力値を別々に保持する。能力値のMapと技の一覧は防御的にコピーする。
+ */
 public record CharacterProfile(
     /* 識別子。 */ String id, /* 表示名。 */
     String name, /* attribute。 */

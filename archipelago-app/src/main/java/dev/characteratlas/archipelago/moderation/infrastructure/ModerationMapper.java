@@ -54,6 +54,7 @@ interface ModerationMapper {
       @Param("note") String note);
 
   /** 投稿の存在するか確認するを扱う。 */
+  @Select("SELECT EXISTS (SELECT 1 FROM review_post WHERE post_id = #{id})")
   boolean postExists(@Param("id") UUID id);
 
   /** reportsを扱う。 */

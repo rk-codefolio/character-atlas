@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.moderation.infrastructure;
 
+import dev.characteratlas.archipelago.shared.application.InfrastructureException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -86,15 +87,15 @@ public class DiscordReportNotifications {
     if (!webhook.isBlank()
         && !webhook.matches(
             "https://discord\\.com/api/(?:v10/)?webhooks/[0-9]{1,20}/[A-Za-z0-9_-]+")) {
-      throw new IllegalArgumentException("Invalid Discord report webhook URL");
+      throw new InfrastructureException("Invalid Discord report webhook URL");
     }
     if (!webhook.isBlank() && (!owner.matches("[0-9]{1,20}") || recipients.size() > 100)) {
-      throw new IllegalArgumentException(
+      throw new InfrastructureException(
           "Discord report notifications require a valid owner ID and at most 100 recipients");
     }
     if (!webhook.isBlank()
         && message(recipients, origin, new UUID(0, 0)).length() > MAX_MESSAGE_LENGTH) {
-      throw new IllegalArgumentException(
+      throw new InfrastructureException(
           "Discord report notification exceeds 2000 characters. Reduce the recipient list.");
     }
   }

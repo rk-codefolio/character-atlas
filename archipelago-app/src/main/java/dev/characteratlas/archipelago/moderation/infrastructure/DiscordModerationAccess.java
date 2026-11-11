@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.moderation.infrastructure;
 
+import dev.characteratlas.archipelago.shared.presentation.ApiRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.security.SecureRandom;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.JsonNode;
 
@@ -113,25 +113,25 @@ public class DiscordModerationAccess {
   public String requireModerator(HttpServletRequest request) {
     // 認可情報。
     ModeratorAccess access = access(request);
-    if (!access.canModerate()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    if (!access.canModerate()) throw new ApiRequestException(HttpStatus.FORBIDDEN);
     return (String) request.getSession(false).getAttribute(USER_SESSION);
   }
 
   /** オーナー権限を確認し、監査用の操作者IDを返す。 */
   public String requireOwner(HttpServletRequest request) {
-    if (!access(request).owner()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    if (!access(request).owner()) throw new ApiRequestException(HttpStatus.FORBIDDEN);
     return requireModerator(request);
   }
 
   /** 書き込みリクエストが設定済みの画面オリジンから届いたことを確認する。 */
   public void requireOrigin(HttpServletRequest request) {
     if (!origin.equals(request.getHeader("Origin")))
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+      throw new ApiRequestException(HttpStatus.FORBIDDEN);
   }
 
   /** 照合値をセッションに保存し、Discordの認可画面のURLを作る。 */
   public URI start(HttpServletRequest request) {
-    if (!enabled()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+    if (!enabled()) throw new ApiRequestException(HttpStatus.SERVICE_UNAVAILABLE);
     // OAuth照合値の生成に使うランダムなバイト列。
     byte[] bytes = new byte[32];
     random.nextBytes(bytes);

@@ -9,7 +9,4 @@
     ORDER BY p.updated_at DESC, p.post_id LIMIT 50 OFFSET #{offset}
   </select>
 
-  <select id="postExists" resultType="boolean">
-    SELECT EXISTS (SELECT 1 FROM review_post WHERE post_id = #{id})
-  </select>
-</mapper>
+  </mapper>

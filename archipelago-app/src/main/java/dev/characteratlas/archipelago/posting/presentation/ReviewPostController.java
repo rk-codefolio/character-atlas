@@ -7,18 +7,20 @@ import dev.characteratlas.archipelago.catalog.application.SearchContentOptions;
 import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
 import dev.characteratlas.archipelago.posting.application.Post;
 import dev.characteratlas.archipelago.posting.application.PostService;
-import dev.characteratlas.archipelago.posting.domain.BuildDetails;
-import dev.characteratlas.archipelago.posting.domain.CommentDetails;
-import dev.characteratlas.archipelago.posting.domain.GuideDetails;
-import dev.characteratlas.archipelago.posting.domain.MatrixSelection;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import dev.characteratlas.archipelago.posting.domain.PostingDetails;
+import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
+import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.details.MatrixSelection;
+import dev.characteratlas.archipelago.posting.domain.details.PostingDetails;
+import dev.characteratlas.archipelago.shared.presentation.ApiRequestException;
+import dev.characteratlas.domain.DomainValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import dev.characteratlas.domain.DomainValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 
 /** Reviewの投稿のREST APIを表す。 */
@@ -113,8 +114,8 @@ public class ReviewPostController {
               && post.subject() != null
               && post.details() != null
               && post.details().isObject(),
-          "投稿先か入力項目が不正です。");
-      require(post.details().toString().length() <= 12000, "入力が長すぎます。");
+          PostValidationMessages.INVALID_SUBJECT);
+      require(post.details().toString().length() <= 12000, PostValidationMessages.TEXT_TOO_LONG);
       // 投稿種別ごとにREST入力をドメインの値に変換する。
       PostingDetails details =
           switch (post.kind()) {
@@ -136,7 +137,7 @@ public class ReviewPostController {
     } catch (DomainValidationException error) {
       throw error;
     } catch (IllegalArgumentException error) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.getMessage(), error);
+      throw new ApiRequestException(HttpStatus.BAD_REQUEST, error.getMessage(), error);
     }
   }
 
@@ -145,7 +146,7 @@ public class ReviewPostController {
     try {
       return PostSelections.read(details, field, legacyField);
     } catch (IllegalArgumentException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+      throw new ApiRequestException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
     }
   }
 
@@ -153,7 +154,7 @@ public class ReviewPostController {
   private static BuildDetails build(JsonNode details) {
     // matrices。
     var matrices = details.path("matrices");
-    require(matrices.isArray(), "航路紋を2種類以上選んでください。");
+    require(matrices.isArray(), PostValidationMessages.MATRIX_COUNT);
     // 名称一覧。
     var selections =
         matrices
@@ -165,7 +166,7 @@ public class ReviewPostController {
                   points.isMissingNode()
                       || points.isNull()
                       || points.isIntegralNumber() && points.bigIntegerValue().signum() >= 0,
-                  "ポイントは空欄か0以上の整数にしてください。");
+                  PostValidationMessages.NEGATIVE_MATRIX_POINTS);
               return new MatrixSelection(
                   matrix.path("name").asString(""),
                   points.isIntegralNumber()
@@ -175,7 +176,7 @@ public class ReviewPostController {
             .toList();
     // 能力値の組み合わせ。
     var stats = details.path("mainStats");
-    require(stats.isArray(), "装具スロット④・⑤・⑥を選んでください。");
+    require(stats.isArray(), PostValidationMessages.MAIN_STAT_SLOTS);
     return new BuildDetails(
         details.path("shell").asString(""),
         selections,
@@ -192,6 +193,6 @@ public class ReviewPostController {
 
   /** 必須条件を確認するを扱う。 */
   private static void require(boolean condition, String message) {
-    if (!condition) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    if (!condition) throw new ApiRequestException(HttpStatus.BAD_REQUEST, message);
   }
 }

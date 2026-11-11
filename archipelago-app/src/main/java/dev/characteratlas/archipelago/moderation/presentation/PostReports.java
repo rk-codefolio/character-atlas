@@ -3,6 +3,7 @@ package dev.characteratlas.archipelago.moderation.presentation;
 import dev.characteratlas.archipelago.moderation.application.Report;
 import dev.characteratlas.archipelago.moderation.application.ReportService;
 import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
+import dev.characteratlas.archipelago.shared.presentation.ApiRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 /** 投稿のReportsを表す。 */
 @RestController
@@ -44,7 +44,7 @@ public class PostReports {
     // 通報の補足。
     String note = submission.note() == null ? "" : submission.note().strip();
     if (submission.reason() == null || note.length() > 500)
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+      throw new ApiRequestException(HttpStatus.BAD_REQUEST);
     reports.report(id, submission.reason().name(), note);
     return ResponseEntity.accepted().build();
   }

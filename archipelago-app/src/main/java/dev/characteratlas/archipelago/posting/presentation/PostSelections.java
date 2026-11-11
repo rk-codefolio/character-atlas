@@ -1,5 +1,7 @@
 package dev.characteratlas.archipelago.posting.presentation;
 
+import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
+import dev.characteratlas.domain.DomainValidationException;
 import java.util.List;
 import tools.jackson.databind.JsonNode;
 
@@ -23,7 +25,7 @@ public final class PostSelections {
         || values
             .valueStream()
             .anyMatch(value -> !value.isTextual() || value.asString("").isBlank())) {
-      throw new IllegalArgumentException("選択項目を確認してください。");
+      throw new DomainValidationException(PostValidationMessages.INVALID_SELECTION);
     }
     return values.valueStream().map(JsonNode::asString).distinct().toList();
   }

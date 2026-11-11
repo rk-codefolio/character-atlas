@@ -1,5 +1,6 @@
 package dev.characteratlas.application;
 
+import dev.characteratlas.domain.DomainValidationException;
 import dev.characteratlas.domain.CharacterProfile;
 import dev.characteratlas.domain.SearchTerm;
 import dev.characteratlas.domain.SearchTermKind;
@@ -132,7 +133,7 @@ public final class CharacterCatalog {
     // knownのTerms。
     var knownTerms = catalog.terms().stream().map(SearchTerm::id).collect(Collectors.toSet());
     if (groups.stream().anyMatch(Set::isEmpty) || !knownTerms.containsAll(terms)) {
-      throw new IllegalArgumentException("不明な検索条件があります");
+      throw new DomainValidationException("不明な検索条件があります");
     }
     return catalog.characters().stream()
         .map(character -> new RankedResult(character, result(character, terms, groups, mode)))

@@ -1,7 +1,9 @@
 package dev.characteratlas.archipelago.shared.application;
 
+import dev.characteratlas.domain.ExpectedException;
+
 /** 処理のユースケースの例外を表す。 */
-public final class UseCaseException extends RuntimeException {
+public final class UseCaseException extends ExpectedException {
 
   /** 種別。 */
   private final UseCaseFailure kind;

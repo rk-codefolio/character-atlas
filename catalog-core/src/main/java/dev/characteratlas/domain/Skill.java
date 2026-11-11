@@ -2,7 +2,11 @@ package dev.characteratlas.domain;
 
 import java.util.List;
 
-/** スキルを表す。 */
+/**
+ * 技の数値レベル、説明文の出所、効果の検索根拠を保持する。
+ *
+ * <p>説明文の出所と検索根拠は別の情報として保持し、検索時の明示一致と関連候補の判定に使用する。
+ */
 public record Skill(
     /* 識別子。 */ String id, /* 表示名。 */
     String name, /* レベル。 */

@@ -3,12 +3,13 @@ package dev.characteratlas.archipelago.posting.application;
 import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
 import dev.characteratlas.archipelago.catalog.application.Content;
 import dev.characteratlas.archipelago.moderation.application.AuditLog;
-import dev.characteratlas.archipelago.posting.domain.BuildDetails;
-import dev.characteratlas.archipelago.posting.domain.CommentDetails;
-import dev.characteratlas.archipelago.posting.domain.GuideDetails;
-import dev.characteratlas.archipelago.posting.domain.MatrixSelection;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
+import dev.characteratlas.archipelago.posting.domain.PostValidationMessages;
+import dev.characteratlas.archipelago.posting.domain.details.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.details.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.details.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.details.MatrixSelection;
 import dev.characteratlas.archipelago.shared.application.UseCaseException;
 import java.util.List;
 import java.util.UUID;
@@ -70,25 +71,30 @@ public class PostService {
   private void validate(PostDraft draft) {
     // 図鑑の登録済みコンテンツ識別子。
     var contentIds = options.contents().stream().map(Content::id).toList();
-    require(contentIds.containsAll(draft.contentTags()), "コンテンツタグが見つかりません。");
+    require(
+        contentIds.containsAll(draft.contentTags()), PostValidationMessages.CONTENT_TAG_NOT_FOUND);
     switch (draft.details()) {
       case GuideDetails(_, var characters) -> {
-        require(contentIds.contains(draft.subject()), "コンテンツを選んでください。");
-        require(characters.stream().allMatch(store::characterExists), "関連渡り手が見つかりません。");
+        require(contentIds.contains(draft.subject()), PostValidationMessages.CONTENT_REQUIRED);
+        require(
+            characters.stream().allMatch(store::characterExists),
+            PostValidationMessages.RELATED_CHARACTER_NOT_FOUND);
       }
       case BuildDetails(var shell, var matrices, var stats, _) -> {
-        require(store.characterExists(draft.subject()), "キャラクターが見つかりません。");
+        require(store.characterExists(draft.subject()), PostValidationMessages.CHARACTER_NOT_FOUND);
         // ビルドで選択できる装具の一覧。
         var equipment = options.get();
-        require(equipment.shells().contains(shell), "航海具を選んでください。");
+        require(equipment.shells().contains(shell), PostValidationMessages.SHELL_REQUIRED);
         // 登録済みの航路紋の名称。
         var available = equipment.matrices().stream().map(matrix -> matrix.name()).toList();
         require(
             available.containsAll(matrices.stream().map(MatrixSelection::name).toList()),
-            "異なる航路紋を選んでください。");
-        require(equipment.mainStats().containsAll(stats), "装具スロット④・⑤・⑥を選んでください。");
+            PostValidationMessages.DUPLICATE_MATRICES);
+        require(equipment.mainStats().containsAll(stats), PostValidationMessages.MAIN_STAT_SLOTS);
       }
-      case CommentDetails() -> require(store.characterExists(draft.subject()), "キャラクターが見つかりません。");
+      case CommentDetails() ->
+          require(
+              store.characterExists(draft.subject()), PostValidationMessages.CHARACTER_NOT_FOUND);
     }
   }
 

@@ -6,6 +6,7 @@ import dev.characteratlas.application.Direction;
 import dev.characteratlas.application.MatchMode;
 import dev.characteratlas.application.SearchResult;
 import dev.characteratlas.archipelago.shared.application.UseCaseException;
+import dev.characteratlas.domain.DomainValidationException;
 import dev.characteratlas.domain.Stat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -105,7 +106,7 @@ public class CatalogQueries {
       if (role != null && !role.isBlank()) {
         // members。
         var members = options.get().roles().get(role);
-        if (members == null) throw new IllegalArgumentException("不明な役割があります");
+        if (members == null) throw new DomainValidationException("不明な役割があります");
         results = results.filter(result -> members.contains(result.character().id()));
       }
       if (content != null && !content.isEmpty()) {
@@ -114,7 +115,7 @@ public class CatalogQueries {
             searchContents.available().stream()
                 .map(Content::id)
                 .collect(Collectors.toUnmodifiableSet());
-        if (!allowed.containsAll(content)) throw new IllegalArgumentException("コンテンツが見つかりません。");
+        if (!allowed.containsAll(content)) throw new DomainValidationException("コンテンツが見つかりません。");
         // tagged。
         var tagged = posts.taggedCharacters(content);
         results =

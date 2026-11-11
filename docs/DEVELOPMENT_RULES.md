@@ -43,4 +43,5 @@
 ## Mapper SQL の配置
 
 - 単一テーブルの固定 SQL で結果マッピングが単純なものは Mapper インターフェースに置く。JOIN、CTE、サブクエリ、動的 SQL、一括処理、複雑な結果マッピングを含むものは Mapper XML に置く。
+- 単一テーブルに対する固定の `SELECT EXISTS (SELECT 1 ...)` は単純な存在確認としてインターフェースに置く。
 - Mapper XML は対応する Java Mapper と同じパッケージ階層に置く。移行した SQL は PostgreSQL 統合テストで引数、条件分岐、結果マッピングを確認する。
