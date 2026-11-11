@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '4.1.2'
 }
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
@@ -20,3 +21,46 @@ dependencies {
 tasks.named('test') { useJUnitPlatform() }
 
 apply from: file("../catalog-core/gradle/java-style.gradle")
+
+
+jacoco { toolVersion = '0.8.16' }
+
+def coreProject = gradle.includedBuild('catalog-core')
+def integrationDatabase = providers.environmentVariable('ATLAS_TEST_DB_URL')
+def combinedClasses = files(sourceSets.main.output.classesDirs, '../catalog-core/build/classes/java/main')
+def combinedData = files(layout.buildDirectory.file('jacoco/test.exec'), '../catalog-core/build/jacoco/test.exec')
+def combinedSources = files(sourceSets.main.allJava.srcDirs, '../catalog-core/src/main/java')
+def verifyIntegrationDatabase = tasks.register('verifyIntegrationDatabase') {
+    doLast {
+        if (!integrationDatabase.isPresent()) {
+            throw new GradleException('ATLAS_TEST_DB_URL is required for aggregate coverage.')
+        }
+    }
+}
+tasks.named('test') { inputs.property('integrationDatabaseConfigured', integrationDatabase.isPresent()) }
+def combinedReport = tasks.register('combinedCoverageReport', JacocoReport) {
+    dependsOn verifyIntegrationDatabase, tasks.named('test'), coreProject.task(':test')
+    classDirectories.setFrom(combinedClasses)
+    executionData.setFrom(combinedData)
+    sourceDirectories.setFrom(combinedSources)
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+def combinedVerification = tasks.register('verifyCombinedCoverage', JacocoCoverageVerification) {
+    dependsOn combinedReport
+    classDirectories.setFrom(combinedClasses)
+    executionData.setFrom(combinedData)
+    violationRules {
+        rule {
+            element = 'BUNDLE'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+tasks.named('check') { dependsOn combinedVerification }

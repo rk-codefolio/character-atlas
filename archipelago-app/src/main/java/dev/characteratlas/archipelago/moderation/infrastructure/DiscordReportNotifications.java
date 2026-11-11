@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -39,12 +40,24 @@ public class DiscordReportNotifications {
   private final RestClient discord;
 
   /** 通知先とメンション対象を確定し、送信クライアントを準備する。 */
+  @Autowired
   public DiscordReportNotifications(
       ModerationMapper mapper,
       @Value("${catalog.discord.report-webhook}") String webhook,
       @Value("${catalog.frontend-origin}") String origin,
       @Value("${catalog.discord.owner-id}") String owner,
       @Value("${catalog.discord.moderator-ids}") String moderators) {
+    this(mapper, webhook, origin, owner, moderators, createClient());
+  }
+
+  /** HTTPクライアントを受け取り、外部サービスとの接続方法を分離する。 */
+  DiscordReportNotifications(
+      ModerationMapper mapper,
+      String webhook,
+      String origin,
+      String owner,
+      String moderators,
+      RestClient client) {
     this.mapper = mapper;
     this.origin = origin;
     this.recipients =
@@ -55,11 +68,16 @@ public class DiscordReportNotifications {
             .toList();
     validateConfiguration(webhook, origin, owner, recipients);
     this.webhook = webhook.isBlank() ? null : URI.create(webhook + "?wait=true");
-    // 生成設定。
+    discord = client;
+  }
+
+  /** 接続と読み取りにタイムアウトを設定したHTTPクライアントを作る。 */
+  private static RestClient createClient() {
+    // HTTPタイムアウトを設定するリクエストファクトリー。
     var factory = new SimpleClientHttpRequestFactory();
     factory.setConnectTimeout(Duration.ofSeconds(5));
     factory.setReadTimeout(Duration.ofSeconds(8));
-    discord = RestClient.builder().requestFactory(factory).build();
+    return RestClient.builder().requestFactory(factory).build();
   }
 
   /** 通知先、宛先の件数、通知本文の長さを起動時に検証する。 */
