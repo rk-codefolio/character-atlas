@@ -1,0 +1,15 @@
+初期化中
+socket exit=0: /var/run/postgresql:5432 - accepting connections
+TCP exit=2: 127.0.0.1:5432 - no response
+本サーバー起動後
+socket exit=0: /var/run/postgresql:5432 - accepting connections
+TCP exit=0: 127.0.0.1:5432 - accepting connections
+
+ログ抜粋
+2026-11-11 03:02:29.789 UTC [54] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-11 03:02:29.793 UTC [54] LOG:  database system is ready to accept connections
+/usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/10-observation.sql
+PostgreSQL init process complete; ready for start up.
+2026-11-11 03:02:42.104 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-11-11 03:02:42.108 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-11-11 03:02:42.119 UTC [1] LOG:  database system is ready to accept connections

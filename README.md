@@ -12,6 +12,14 @@
 
 ![トワはANDでは関連候補としてマレアとユラの後に並び、ORでは明示一致になります。](docs/images/search-and-or.svg)
 
+同じ条件をChromeで表示した実画面です。ANDは3件でトワに「関連候補」が付き、ORは4件でそのラベルが外れます。
+
+| AND検索 | OR検索 |
+| --- | --- |
+| ![護りと回復のAND検索。3件でトワが関連候補として表示される。](docs/images/search-and.png) | ![同じ条件のOR検索。4件でトワに関連候補のラベルが付かない。](docs/images/search-or.png) |
+
+2026年11月11日、コード `bf59097` の架空データを一時DBに登録し、Chromeで取得しました。
+
 Dockerで起動したら、[AND検索](http://localhost:3000/search?term=guard&term=restore&mode=AND)と[OR検索](http://localhost:3000/search?term=guard&term=restore&mode=OR)を開いて比較できます。
 
 [操作手順](archipelago-app/README.md#試し方) · [検索の実装](catalog-core/src/main/java/dev/characteratlas/application/search/CharacterCatalog.java) · [検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/search/CharacterCatalogTest.java)
@@ -35,7 +43,7 @@ Dockerで起動したら、[AND検索](http://localhost:3000/search?term=guard&t
 
 初回公開までの人間の作業時間は **約5時間**（対話履歴からの概算）です。[見積もりの内訳と対話の試行錯誤](docs/AI_DEVELOPMENT.md) · [公開ソースを使った分析事例](docs/WESNOTH_ANALYSIS.md)
 
-開発者本人とCodexの指摘、対応結果、PR差分を一覧にまとめました。[レビューの指摘と対応結果](docs/REVIEW_HISTORY.md)
+開発者本人とCodexの指摘、対応結果、PR差分を一覧にまとめました。[レビューの指摘と対応結果](docs/REVIEW_HISTORY.md) · [投稿の型設計と変更範囲](docs/POSTING_DESIGN.md) · [DB起動判定の観測](docs/POSTGRES_STARTUP.md)
 
 ## PRごとの検証
 

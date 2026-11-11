@@ -105,3 +105,7 @@ AIには、修正後の導線と操作手順を具体化し、実際の画面を
 ### 通報を受けた時点の攻略詳細を保存する
 
 機能拡張後のCodexレビューで、通報時の記録に攻略やビルドの詳細が欠けていると分かりました。通報の判断に必要な内容を投稿の編集後も確認できるように、通報時のスナップショットに詳細を保存し、管理画面で表示するようにしました。回帰テストでは攻略を投稿して通報した後に元投稿の詳細を更新し、通報記録に当初の難易度が残ることを確認します。[PR #4の差分](https://github.com/rk-codefolio/character-atlas/pull/4/files) · [現在の統合テスト](../archipelago-app/src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
+
+## レビュー後の振り返り
+
+2026年11月11日に、[投稿詳細の型設計](POSTING_DESIGN.md)について代替案、現在の設計の負担、種別追加時の変更範囲を整理しました。また、[PostgreSQL起動判定](POSTGRES_STARTUP.md)を独立した一時DBで再観測し、初期化中のUnixソケットとTCPの結果を記録しました。READMEのAND・OR検索には実画面を添えています。
