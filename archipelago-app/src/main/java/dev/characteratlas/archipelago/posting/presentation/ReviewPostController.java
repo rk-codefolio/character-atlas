@@ -10,6 +10,7 @@ import dev.characteratlas.archipelago.posting.application.PostService;
 import dev.characteratlas.archipelago.posting.domain.BuildDetails;
 import dev.characteratlas.archipelago.posting.domain.CommentDetails;
 import dev.characteratlas.archipelago.posting.domain.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.MatrixSelection;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
 import dev.characteratlas.archipelago.posting.domain.PostingDetails;
@@ -18,7 +19,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
 
@@ -97,57 +107,33 @@ public class ReviewPostController {
   /** 入力内容を扱う。 */
   private PostDraft draft(UUID id, PostRequest post) {
     try {
-      validate(post);
+      require(
+          post.kind() != null
+              && post.subject() != null
+              && post.details() != null
+              && post.details().isObject(),
+          "投稿先か入力項目が不正です。");
+      require(post.details().toString().length() <= 12000, "入力が長すぎます。");
+      // 投稿種別ごとにREST入力をドメインの値に変換する。
+      PostingDetails details =
+          switch (post.kind()) {
+            case COMMENT -> new CommentDetails();
+            case BUILD -> build(post.details());
+            case CONTENT ->
+                new GuideDetails(
+                    optionalText(post.details().path("stage"), "ステージ・難易度"),
+                    selections(post.details(), "relatedCharacters", "relatedCharacter"));
+          };
       return new PostDraft(
-          id, post.kind(), post.subject(), post.title(), post.body(), post.details().toString());
+          id,
+          post.kind(),
+          post.subject(),
+          post.title(),
+          post.body(),
+          details,
+          selections(post.details(), "contentTags", "contentTag"));
     } catch (IllegalArgumentException error) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.getMessage(), error);
-    }
-  }
-
-  /** 検証するを扱う。 */
-  private void validate(PostRequest post) {
-    require(
-        post.kind() != null
-            && post.subject() != null
-            && post.subject().matches("[a-z0-9][a-z0-9-]{0,39}")
-            && post.details() != null
-            && post.details().isObject(),
-        "投稿先か入力項目が不正です。");
-    // 有効なコンテンツ識別子。
-    var contentIds =
-        reviewOptions.contents().stream()
-            .map(Content::id)
-            .collect(java.util.stream.Collectors.toUnmodifiableSet());
-    require(
-        contentIds.containsAll(selections(post.details(), "contentTags", "contentTag")),
-        "コンテンツタグが見つかりません。");
-    // 投稿の種類別詳細。
-    PostingDetails details =
-        switch (post.kind()) {
-          case COMMENT -> new CommentDetails();
-          case BUILD -> build(post.details());
-          case CONTENT ->
-              new GuideDetails(
-                  optionalText(post.details().path("stage"), "ステージ・難易度"),
-                  selections(post.details(), "relatedCharacters", "relatedCharacter"));
-        };
-    switch (details) {
-      case GuideDetails(_, var characters) -> {
-        require(contentIds.contains(post.subject()), "コンテンツを選んでください。");
-        require(characters.stream().allMatch(posts::characterExists), "関連渡り手が見つかりません。");
-      }
-      case BuildDetails(var shell, var matrices, var stats, _) -> {
-        require(posts.characterExists(post.subject()), "キャラクターが見つかりません。");
-        // 図鑑の選択肢。
-        var options = reviewOptions.get();
-        require(options.shells().contains(shell), "航海具を選んでください。");
-        // 有効な選択肢。
-        var available = options.matrices().stream().map(matrix -> matrix.name()).toList();
-        require(available.containsAll(matrices), "異なる航路紋を選んでください。");
-        require(options.mainStats().containsAll(stats), "装具スロット④・⑤・⑥を選んでください。");
-      }
-      case CommentDetails() -> require(posts.characterExists(post.subject()), "キャラクターが見つかりません。");
     }
   }
 
@@ -166,7 +152,7 @@ public class ReviewPostController {
     var matrices = details.path("matrices");
     require(matrices.isArray(), "航路紋を2種類以上選んでください。");
     // 名称一覧。
-    var names =
+    var selections =
         matrices
             .valueStream()
             .map(matrix -> {
@@ -177,7 +163,11 @@ public class ReviewPostController {
                       || points.isNull()
                       || points.isIntegralNumber() && points.bigIntegerValue().signum() >= 0,
                   "ポイントは空欄か0以上の整数にしてください。");
-              return matrix.path("name").asString("");
+              return new MatrixSelection(
+                  matrix.path("name").asString(""),
+                  points.isIntegralNumber()
+                      ? Optional.of(points.bigIntegerValue())
+                      : Optional.empty());
             })
             .toList();
     // 能力値の組み合わせ。
@@ -185,7 +175,7 @@ public class ReviewPostController {
     require(stats.isArray(), "装具スロット④・⑤・⑥を選んでください。");
     return new BuildDetails(
         details.path("shell").asString(""),
-        names,
+        selections,
         stats.valueStream().map(stat -> stat.asString("")).toList(),
         optionalText(details.path("targetStats"), "目標ステータス"));
   }

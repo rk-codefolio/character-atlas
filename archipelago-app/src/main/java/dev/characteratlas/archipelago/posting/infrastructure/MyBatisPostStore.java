@@ -2,8 +2,12 @@ package dev.characteratlas.archipelago.posting.infrastructure;
 
 import dev.characteratlas.archipelago.posting.application.Post;
 import dev.characteratlas.archipelago.posting.application.PostStore;
+import dev.characteratlas.archipelago.posting.domain.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.GuideDetails;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
+import dev.characteratlas.archipelago.shared.application.UseCaseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,13 +54,13 @@ public class MyBatisPostStore implements PostStore {
   /** 登録するを扱う。 */
   @Override
   public void insert(PostDraft draft) {
-    mapper.insert(draft);
+    mapper.insert(toWrite(draft));
   }
 
   /** 置き換えるを扱う。 */
   @Override
   public Optional<String> replace(PostDraft draft) {
-    return Optional.ofNullable(mapper.replace(draft));
+    return Optional.ofNullable(mapper.replace(toWrite(draft)));
   }
 
   /** ロックするを扱う。 */
@@ -69,5 +73,46 @@ public class MyBatisPostStore implements PostStore {
   @Override
   public void delete(UUID id) {
     mapper.delete(id);
+  }
+
+  /** 型付きの詳細から既存スキーマと互換性のあるJSONを組み立てる。 */
+  private PostWrite toWrite(PostDraft draft) {
+    // PostgreSQLのdetails列に格納するオブジェクト。
+    var details = json.createObjectNode();
+    if (!draft.contentTags().isEmpty()) {
+      // 複数のコンテンツタグを格納する配列。
+      var tags = details.putArray("contentTags");
+      draft.contentTags().forEach(tags::add);
+    }
+    switch (draft.details()) {
+      case CommentDetails() -> {}
+      case GuideDetails(var stage, var characters) -> {
+        stage.ifPresent(value -> details.put("stage", value));
+        // 攻略に関連するキャラクターIDの配列。
+        var related = details.putArray("relatedCharacters");
+        characters.forEach(related::add);
+      }
+      case BuildDetails(var shell, var matrices, var stats, var targetStats) -> {
+        details.put("shell", shell);
+        // 航路紋とポイントの配列。
+        var matrixRows = details.putArray("matrices");
+        matrices.forEach(matrix -> {
+          // 航路紋ごとの名称とポイント。
+          var row = matrixRows.addObject().put("name", matrix.name());
+          matrix
+              .points()
+              .ifPresentOrElse(value -> row.put("points", value), () -> row.putNull("points"));
+        });
+        // 装具3枠のメインステータス。
+        var slots = details.putArray("mainStats");
+        stats.forEach(slots::add);
+        targetStats.ifPresent(value -> details.put("targetStats", value));
+      }
+    }
+    // SQLパラメーターに渡すJSON文字列。
+    String encoded = details.toString();
+    if (encoded.length() > 12000) throw UseCaseException.invalid("入力が長すぎます。");
+    return new PostWrite(
+        draft.id(), draft.kind().name(), draft.subject(), draft.title(), draft.body(), encoded);
   }
 }

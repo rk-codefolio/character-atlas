@@ -1,6 +1,5 @@
 package dev.characteratlas.archipelago.posting.infrastructure;
 
-import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ibatis.annotations.Delete;
@@ -41,7 +40,7 @@ interface PostMapper {
       INSERT INTO review_post (post_id, kind, subject_id, title, body, details)
       VALUES (#{id}, #{kind}, #{subject}, #{title}, #{body}, CAST(#{details} AS jsonb))
       """)
-  void insert(PostDraft draft);
+  void insert(PostWrite draft);
 
   /** 置き換えるを扱う。 */
   @Select(
@@ -53,7 +52,7 @@ interface PostMapper {
           RETURNING to_jsonb(p)::text
           """,
       affectData = true)
-  String replace(PostDraft draft);
+  String replace(PostWrite draft);
 
   /** ロックするを扱う。 */
   @Select("SELECT to_jsonb(p)::text FROM review_post p WHERE post_id = #{id} FOR UPDATE")

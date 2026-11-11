@@ -4,8 +4,13 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.characteratlas.archipelago.moderation.infrastructure.DiscordModerationAccess;
 import dev.characteratlas.archipelago.moderation.infrastructure.DiscordReportNotifications;
@@ -259,6 +264,7 @@ class ArchipelagoIntegrationTest {
   /** 任意欄に不正な型を渡し、投稿APIが400を返すことを確認する。 */
   @Test
   void rejectsDetailsThatCannotBeRendered() throws Exception {
+    // 各入力のHTTP検証で発生する検査例外をそのままJUnitに渡すため、通常のforを使う。
     for (String details :
         List.of("{\"stage\":{}}", "{\"contentTags\":{}}", "{\"contentTags\":[{}]}")) {
       String guide =

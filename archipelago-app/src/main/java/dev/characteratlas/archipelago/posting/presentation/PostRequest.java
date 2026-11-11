@@ -1,7 +1,6 @@
 package dev.characteratlas.archipelago.posting.presentation;
 
 import dev.characteratlas.archipelago.posting.domain.PostKind;
-import org.springframework.web.bind.annotation.*;
 import tools.jackson.databind.JsonNode;
 
 /** 投稿のリクエストを表す。 */

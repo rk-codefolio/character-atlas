@@ -1,6 +1,12 @@
 package dev.characteratlas.archipelago.posting.application;
 
+import dev.characteratlas.archipelago.catalog.application.CatalogOptions;
+import dev.characteratlas.archipelago.catalog.application.Content;
 import dev.characteratlas.archipelago.moderation.application.AuditLog;
+import dev.characteratlas.archipelago.posting.domain.BuildDetails;
+import dev.characteratlas.archipelago.posting.domain.CommentDetails;
+import dev.characteratlas.archipelago.posting.domain.GuideDetails;
+import dev.characteratlas.archipelago.posting.domain.MatrixSelection;
 import dev.characteratlas.archipelago.posting.domain.PostDraft;
 import dev.characteratlas.archipelago.posting.domain.PostKind;
 import dev.characteratlas.archipelago.shared.application.UseCaseException;
@@ -18,10 +24,14 @@ public class PostService {
   /** 監査記録のポート。 */
   private final AuditLog log;
 
+  /** 投稿先と装具の選択肢を照会するポート。 */
+  private final CatalogOptions options;
+
   /** 投稿のユースケースを初期化する。 */
-  public PostService(PostStore store, AuditLog log) {
+  public PostService(PostStore store, AuditLog log, CatalogOptions options) {
     this.store = store;
     this.log = log;
+    this.options = options;
   }
 
   /** 指定された条件に沿って一覧を取得する。 */
@@ -29,13 +39,9 @@ public class PostService {
     return store.list(kind, subject);
   }
 
-  /** キャラクターの存在するか確認するを扱う。 */
-  public boolean characterExists(String id) {
-    return store.characterExists(id);
-  }
-
   /** 検証した入力を新しい投稿として登録する。 */
   public UUID create(PostDraft draft) {
+    validate(draft);
     store.insert(draft);
     return draft.id();
   }
@@ -43,6 +49,7 @@ public class PostService {
   /** 投稿の更新と監査記録を同じ操作として実行する。 */
   @Transactional
   public void edit(String actor, PostDraft draft) {
+    validate(draft);
     // 変更前。
     String before = store.lock(draft.id()).orElseThrow(UseCaseException::notFound);
     // 変更後。
@@ -57,5 +64,36 @@ public class PostService {
     String before = store.lock(id).orElseThrow(UseCaseException::notFound);
     store.delete(id);
     log.append(actor, "DELETE_POST", id.toString(), before, null);
+  }
+
+  /** 投稿先、タグ、装具が図鑑に登録されていることを確認する。 */
+  private void validate(PostDraft draft) {
+    // 図鑑の登録済みコンテンツ識別子。
+    var contentIds = options.contents().stream().map(Content::id).toList();
+    require(contentIds.containsAll(draft.contentTags()), "コンテンツタグが見つかりません。");
+    switch (draft.details()) {
+      case GuideDetails(_, var characters) -> {
+        require(contentIds.contains(draft.subject()), "コンテンツを選んでください。");
+        require(characters.stream().allMatch(store::characterExists), "関連渡り手が見つかりません。");
+      }
+      case BuildDetails(var shell, var matrices, var stats, _) -> {
+        require(store.characterExists(draft.subject()), "キャラクターが見つかりません。");
+        // ビルドで選択できる装具の一覧。
+        var equipment = options.get();
+        require(equipment.shells().contains(shell), "航海具を選んでください。");
+        // 登録済みの航路紋の名称。
+        var available = equipment.matrices().stream().map(matrix -> matrix.name()).toList();
+        require(
+            available.containsAll(matrices.stream().map(MatrixSelection::name).toList()),
+            "異なる航路紋を選んでください。");
+        require(equipment.mainStats().containsAll(stats), "装具スロット④・⑤・⑥を選んでください。");
+      }
+      case CommentDetails() -> require(store.characterExists(draft.subject()), "キャラクターが見つかりません。");
+    }
+  }
+
+  /** 利用者が指定した項目が図鑑にない場合はユースケースを中断する。 */
+  private static void require(boolean condition, String message) {
+    if (!condition) throw UseCaseException.invalid(message);
   }
 }

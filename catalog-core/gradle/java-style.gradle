@@ -21,3 +21,14 @@ def registerFormatter = { String taskName, List<String> options ->
 registerFormatter('formatJava', ['--replace'])
 registerFormatter('checkJavaStyle', ['--dry-run', '--set-exit-if-changed'])
 tasks.named('check') { dependsOn 'checkJavaStyle' }
+
+tasks.named('checkJavaStyle') {
+    doLast {
+        def wildcardImports = javaSources.files.findAll { source ->
+            source.readLines('UTF-8').any { line -> line ==~ /^import (static )?.*\.\*;/ }
+        }
+        if (!wildcardImports.isEmpty()) {
+            throw new GradleException("Use explicit imports: ${wildcardImports}")
+        }
+    }
+}
