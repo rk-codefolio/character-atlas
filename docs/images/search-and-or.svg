@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-labelledby="title desc">
+  <title id="title">護りと回復で検索したときのトワの判定</title>
+  <desc id="desc">トワは護りの関連候補で、回復は明示。ANDでは関連候補、ORでは明示一致になります。</desc>
+  <rect width="720" height="200" rx="16" fill="#f0f5fa"/>
+  <g font-family="system-ui, sans-serif" fill="#132b40">
+    <text x="24" y="38" font-size="21" font-weight="bold">トワの検索根拠</text>
+    <text x="214" y="38" font-size="17">護りは関連候補 · 回復は明示</text>
+    <rect x="24" y="60" width="326" height="116" rx="12" fill="#ffffff"/>
+    <rect x="370" y="60" width="326" height="116" rx="12" fill="#ffffff"/>
+    <g font-size="16">
+      <text x="44" y="88">AND · 両方が明示</text>
+      <text x="390" y="88">OR · どちらかが明示</text>
+      <text x="44" y="154">マレア、ユラの後に表示</text>
+      <text x="390" y="154">回復が明示されているため一致</text>
+    </g>
+    <g font-size="23" font-weight="bold">
+      <text x="44" y="123" fill="#805220">関連候補</text>
+      <text x="390" y="123" fill="#12645b">明示一致</text>
+    </g>
+  </g>
+</svg>

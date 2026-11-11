@@ -1,8 +1,20 @@
 # 風綴りの群島 · 渡り手図鑑
 
+[![Verification](https://github.com/rk-codefolio/character-atlas/actions/workflows/verification.yml/badge.svg?branch=main)](https://github.com/rk-codefolio/character-atlas/actions/workflows/verification.yml)
+
 架空ゲーム「風綴りの群島」の図鑑です。107人の渡り手を探し、スキルや育成値を確認できます。45件のコンテンツを掲載し、コメント・ビルド・攻略投稿、通報、管理者による対応を扱います。
 
 **[Dockerで起動する](archipelago-app/README.md#dockerで起動する)** · [操作を試す](archipelago-app/README.md#試し方) · [構成図・仕様](docs/ARCHITECTURE.md) · [ドメイン一覧](docs/DOMAINS.md) · [Codexとの開発記録](docs/AI_DEVELOPMENT.md)
+
+## 3分で見る検索
+
+「護り」と「回復」を選び、ANDとORを切り替えると、トワの検索結果に表示される根拠が変わります。トワの技「夜渡りの灯」は回復を明示し、護りには関連候補として登録されています。
+
+![トワはANDでは関連候補としてマレアとユラの後に並び、ORでは明示一致になります。](docs/images/search-and-or.svg)
+
+Dockerで起動したら、[AND検索](http://localhost:3000/search?term=guard&term=restore&mode=AND)と[OR検索](http://localhost:3000/search?term=guard&term=restore&mode=OR)を開いて比較できます。
+
+[操作手順](archipelago-app/README.md#試し方) · [検索の実装](catalog-core/src/main/java/dev/characteratlas/application/search/CharacterCatalog.java) · [検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/search/CharacterCatalogTest.java)
 
 | プロジェクト | 担当 |
 | --- | --- |
@@ -25,11 +37,9 @@
 
 **Codexコードレビュー実施済み**。初回公開時、機能拡張後、人間レビュー対応後に実施しました。[初回の結果](docs/AI_DEVELOPMENT.md#codexコードレビュー) · [第2回](docs/AI_DEVELOPMENT.md#codexコードレビュー第2回) · [第3回](docs/AI_DEVELOPMENT.md#codexコードレビュー第3回)
 
-### 調査を検索仕様に落とした例
+## PRごとの検証
 
-架空の技「夜渡りの灯」は「回復」を明示し、「護り」とは関連候補で結び付けています。**護りと回復のAND検索**では、両方が明示されたマレアとユラの後に、トワが「関連候補」として並びます。**OR検索**では、トワも回復を明示しているため、明示一致のグループに入ります。表示順位を見れば、元の調査で区別した根拠が検索結果にどう反映されるか確認できます。
-
-[検索のテスト](catalog-core/src/test/java/dev/characteratlas/application/search/CharacterCatalogTest.java) · [架空データの初期登録](archipelago-app/src/main/resources/db/migration/V100__archipelago_catalog.sql) · [全機能版の追加データ](archipelago-app/src/main/resources/db/migration/V101__voyager_atlas.sql) · [画面での試し方](archipelago-app/README.md#試し方)
+PRとmainの更新時に、Javaの単体テスト、PostgreSQL統合テスト、合算行カバレッジ90%以上の検査、Next.jsのビルドを実行します。各実行の成果物からJUnitとJaCoCoのHTMLレポートを取得できます。[GitHub Actionsの実行結果](https://github.com/rk-codefolio/character-atlas/actions/workflows/verification.yml)
 
 ## 共通基盤のテスト
 
