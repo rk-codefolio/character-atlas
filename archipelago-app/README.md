@@ -48,3 +48,5 @@ Discordへの通報通知を使う場合は `CATALOG_DISCORD_REPORT_WEBHOOK` を
 Java 25で、空の検証用PostgreSQLに対し `ATLAS_TEST_DB_URL` と `ARCHIPELAGO_DB_PASSWORD` を設定し、このディレクトリで `../catalog-core/gradlew test` を実行します。テストはユーザー `archipelago` を使って専用のスキーマを作ります。検索と覚醒差分、投稿の入力検証、通報、モデレーターとオーナーの権限差を検証します。[統合テスト](src/test/java/dev/characteratlas/archipelago/ArchipelagoIntegrationTest.java)
 
 [構成図とREST API一覧](../docs/ARCHITECTURE.md)
+
+共通基盤とアプリの本番Javaを合算して測るには、上記のDB設定を使い、このディレクトリで `../catalog-core/gradlew check` を実行します。JaCoCoの行カバレッジが90%未満の場合は失敗します。HTMLレポートは `build/reports/jacoco/combinedCoverageReport/html/index.html` に出力されます。

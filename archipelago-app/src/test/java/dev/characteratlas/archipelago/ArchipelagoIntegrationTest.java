@@ -51,6 +51,7 @@ class ArchipelagoIntegrationTest {
   @Autowired JdbcTemplate jdbc;
   @Autowired DataSource dataSource;
 
+  /** 架空データをDBに適用して一覧・詳細・検索を呼び、件数と覚醒差分、検索根拠を確認する。 */
   @Test
   void listsTheFullCatalogAndSeparatesGrowthAndEvidence() throws Exception {
     mvc.perform(get("/api/characters"))
@@ -91,6 +92,7 @@ class ArchipelagoIntegrationTest {
         .andExpect(jsonPath("$[0].character.id").value("marea"));
   }
 
+  /** V100のDBに投稿し最新まで更新して、投稿の保持と新規テーブルの利用を確認する。 */
   @Test
   void upgradesAnExistingCatalogAndKeepsItsPosts() {
     String schema = SCHEMA + "_upgrade";
@@ -136,6 +138,7 @@ class ArchipelagoIntegrationTest {
         jdbc.queryForObject("SELECT count(*) FROM " + schema + ".moderation_log", Integer.class));
   }
 
+  /** ビルド・攻略の入力をAPIに送り、不正な組み合わせの拒否と有効な投稿の取得を確認する。 */
   @Test
   void validatesBuildsAndContentPostsWithFictionalIds() throws Exception {
     String build =
@@ -173,6 +176,7 @@ class ArchipelagoIntegrationTest {
         .andExpect(jsonPath("$[0].relatedCharacterNames", hasSize(2)));
   }
 
+  /** 投稿と通報を用意し、ロールに応じた操作の許可と監査記録の保持を確認する。 */
   @Test
   void enforcesModerationRolesAndStoresReportsAndAuditEvents() throws Exception {
     String comment =
@@ -252,6 +256,7 @@ class ArchipelagoIntegrationTest {
             .get("allowed_mentions"));
   }
 
+  /** 任意欄に不正な型を渡し、投稿APIが400を返すことを確認する。 */
   @Test
   void rejectsDetailsThatCannotBeRendered() throws Exception {
     for (String details :
@@ -282,6 +287,7 @@ class ArchipelagoIntegrationTest {
         .andExpect(status().isBadRequest());
   }
 
+  /** 通報後に元投稿の詳細を変更し、通報時点の詳細がDBに残ることを確認する。 */
   @Test
   void retainsPostDetailsInTheReportAfterTheOriginalChanges() throws Exception {
     String guide =
@@ -318,6 +324,7 @@ class ArchipelagoIntegrationTest {
             postId));
   }
 
+  /** 通知文が上限を超える宛先を設定し、設定エラーになることを確認する。 */
   @Test
   void rejectsWebhookConfigurationsThatCannotSendTheNotification() {
     String moderators =
@@ -332,6 +339,24 @@ class ArchipelagoIntegrationTest {
                 ORIGIN,
                 "1111",
                 List.of(moderators.split(","))));
+  }
+
+  /** 対象は管理画面と検索の境界。セッションと不正な条件を送り、権限とHTTPステータスを確認する。 */
+  @Test
+  void exposesModerationSessionAndRejectsInvalidSearchConditions() throws Exception {
+    mvc.perform(get("/api/admin/session").session(session("1111")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.owner").value(true));
+    mvc.perform(get("/api/admin/posts").session(session("2222")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").isNotEmpty());
+    mvc.perform(post("/api/admin/logout").session(session("2222")).header("Origin", ORIGIN))
+        .andExpect(status().isNoContent());
+    mvc.perform(get("/api/characters/unknown")).andExpect(status().isNotFound());
+    mvc.perform(get("/api/terms").param("shared", "true")).andExpect(status().isOk());
+    mvc.perform(get("/api/search").param("role", "unknown")).andExpect(status().isBadRequest());
+    mvc.perform(get("/api/search").param("content", "unknown")).andExpect(status().isBadRequest());
+    mvc.perform(get("/api/search").param("term", "unknown")).andExpect(status().isBadRequest());
   }
 
   private static MockHttpSession session(String id) {

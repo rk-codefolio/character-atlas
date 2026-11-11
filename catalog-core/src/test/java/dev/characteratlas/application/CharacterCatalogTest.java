@@ -47,6 +47,7 @@ class CharacterCatalogTest {
                   new SearchTerm(SHIELD, "Shield", SearchTermKind.EFFECT),
                   new SearchTerm(HEAL, "Heal", SearchTermKind.EFFECT))));
 
+  /** 全条件を満たす候補を用意し、ANDで明示一致が候補より先に並ぶことを確認する。 */
   @Test
   void andPrefersDeclaredCoverageButIncludesCandidates() {
     var result = catalog.search(Set.of(SHIELD, HEAL), MatchMode.AND);
@@ -58,6 +59,7 @@ class CharacterCatalogTest {
             .anyMatch(hit -> hit.evidence() == Evidence.RELATED_CANDIDATE));
   }
 
+  /** 明示と関連候補が混在する条件をORで検索し、明示一致が優先されることを確認する。 */
   @Test
   void orNeedsOnlyOneDeclaredHitToRankAheadOfCandidates() {
     var result = catalog.search(Set.of(SHIELD, HEAL), MatchMode.OR);
@@ -67,6 +69,7 @@ class CharacterCatalogTest {
     assertTrue(result.getLast().candidateOnly());
   }
 
+  /** 全角の名前と能力値の欠損を用意し、正規化と両方向での欠損末尾を確認する。 */
   @Test
   void missingStatsAreLastInBothDirectionsAndNamesAreNormalized() {
     assertEquals(
@@ -78,6 +81,7 @@ class CharacterCatalogTest {
     assertEquals("a", catalog.list("ＡＬＰＨＡ", null, Direction.ASC).getFirst().id());
   }
 
+  /** 図鑑順位を付けたデータで一覧と空条件検索を実行し、図鑑順を確認する。 */
   @Test
   void defaultListAndUnfilteredSearchFollowArchivePriority() {
     var expected = List.of("z", "c", "a", "b");
@@ -89,6 +93,7 @@ class CharacterCatalogTest {
         catalog.search(Set.of(), MatchMode.AND).stream().map(row -> row.character().id()).toList());
   }
 
+  /** 条件なしと未知のIDで検索し、全件表示と入力拒否を確認する。 */
   @Test
   void emptySearchListsEveryoneAndUnknownTermIsRejected() {
     assertEquals(4, catalog.search(Set.of(), MatchMode.AND).size());
@@ -97,6 +102,7 @@ class CharacterCatalogTest {
     assertTrue(catalog.detail("absent").isEmpty());
   }
 
+  /** 同名の別IDを束ねてAND検索し、グループ内のいずれかの一致を確認する。 */
   @Test
   void anAliasGroupNeedsOneMatchingIdEvenInAndMode() {
     var result = catalog.searchGroups(List.of(Set.of(SHIELD, HEAL), Set.of(HEAL)), MatchMode.AND);

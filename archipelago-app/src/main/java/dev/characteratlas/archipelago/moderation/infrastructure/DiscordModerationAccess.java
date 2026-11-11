@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -55,12 +56,24 @@ public class DiscordModerationAccess {
   private final RestClient discord;
 
   /** Discordのモデレーションの権限を初期化する。 */
+  @Autowired
   public DiscordModerationAccess(
       @Value("${catalog.frontend-origin}") String origin,
       @Value("${catalog.discord.client-id}") String clientId,
       @Value("${catalog.discord.client-secret}") String secret,
       @Value("${catalog.discord.owner-id}") String ownerId,
       @Value("${catalog.discord.moderator-ids}") String moderatorIds) {
+    this(origin, clientId, secret, ownerId, moderatorIds, createClient());
+  }
+
+  /** HTTPクライアントを受け取り、外部サービスとの接続方法を分離する。 */
+  DiscordModerationAccess(
+      String origin,
+      String clientId,
+      String secret,
+      String ownerId,
+      String moderatorIds,
+      RestClient client) {
     this.origin = origin;
     this.clientId = clientId;
     this.secret = secret;
@@ -70,11 +83,16 @@ public class DiscordModerationAccess {
             .map(String::strip)
             .filter(DiscordModerationAccess::validId)
             .collect(Collectors.toUnmodifiableSet());
-    // 生成設定。
+    discord = client;
+  }
+
+  /** 接続と読み取りにタイムアウトを設定したHTTPクライアントを作る。 */
+  private static RestClient createClient() {
+    // HTTPタイムアウトを設定するリクエストファクトリー。
     var factory = new SimpleClientHttpRequestFactory();
     factory.setConnectTimeout(Duration.ofSeconds(5));
     factory.setReadTimeout(Duration.ofSeconds(8));
-    discord = RestClient.builder().baseUrl(DISCORD).requestFactory(factory).build();
+    return RestClient.builder().baseUrl(DISCORD).requestFactory(factory).build();
   }
 
   /** 現在のセッションから管理権限を判定する。 */
