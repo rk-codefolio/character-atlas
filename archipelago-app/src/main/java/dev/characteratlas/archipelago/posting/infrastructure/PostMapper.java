@@ -12,26 +12,9 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 interface PostMapper {
   /** 指定された条件に沿って一覧を取得する。 */
-  @Select(
-      """
-      SELECT post.post_id, post.title, post.body, post.details::text, post.created_at, post.updated_at,
-             array_to_json(ARRAY(
-                 SELECT character.display_name
-                 FROM jsonb_array_elements_text(
-                     CASE WHEN jsonb_typeof(post.details->'relatedCharacters') = 'array'
-                          THEN post.details->'relatedCharacters'
-                          ELSE jsonb_build_array(post.details->>'relatedCharacter') END
-                 ) WITH ORDINALITY AS related(id, position)
-                 JOIN catalog_character character ON character.character_id = related.id
-                 ORDER BY related.position
-             ))::text
-      FROM review_post post WHERE post.kind = #{kind} AND post.subject_id = #{subject}
-      ORDER BY post.created_at DESC, post.post_id
-      """)
   List<PostRow> list(@Param("kind") String kind, @Param("subject") String subject);
 
   /** キャラクターの存在するか確認するを扱う。 */
-  @Select("SELECT EXISTS (SELECT 1 FROM catalog_character WHERE character_id = #{id})")
   boolean characterExists(@Param("id") String id);
 
   /** 登録するを扱う。 */

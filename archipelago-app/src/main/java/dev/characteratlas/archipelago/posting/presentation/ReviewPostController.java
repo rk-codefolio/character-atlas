@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import dev.characteratlas.domain.DomainValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -132,6 +133,8 @@ public class ReviewPostController {
           post.body(),
           details,
           selections(post.details(), "contentTags", "contentTag"));
+    } catch (DomainValidationException error) {
+      throw error;
     } catch (IllegalArgumentException error) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.getMessage(), error);
     }

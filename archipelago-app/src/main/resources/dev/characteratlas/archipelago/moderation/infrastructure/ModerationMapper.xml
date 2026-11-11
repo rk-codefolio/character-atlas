@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.characteratlas.archipelago.moderation.infrastructure.ModerationMapper">
+  <select id="posts" resultType="dev.characteratlas.archipelago.moderation.application.PostEntry">
+    SELECT p.post_id, p.kind, p.subject_id, COALESCE(c.display_name, p.subject_id),
+           p.title, left(p.body, 120), p.updated_at
+    FROM review_post p
+    LEFT JOIN catalog_character c ON c.character_id = p.subject_id AND p.kind &lt;&gt; 'CONTENT'
+    ORDER BY p.updated_at DESC, p.post_id LIMIT 50 OFFSET #{offset}
+  </select>
+
+  <select id="postExists" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM review_post WHERE post_id = #{id})
+  </select>
+</mapper>

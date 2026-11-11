@@ -38,6 +38,5 @@ interface OptionsMapper {
   List<MetaRow> metadata(@Param("id") String id);
 
   /** 覚醒後を扱う。 */
-  @Select("SELECT EXISTS (SELECT 1 FROM voyager_growth WHERE character_id = #{id} AND awakened)")
   boolean awakened(@Param("id") String id);
 }

@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.posting.domain;
 
+import dev.characteratlas.domain.DomainChecks;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,23 +28,13 @@ public record PostDraft(
           case BuildDetails(_, _, _, _) -> PostKind.BUILD;
           case GuideDetails(_, _) -> PostKind.CONTENT;
         };
-    if (kind != detailKind) {
-      throw new IllegalArgumentException("投稿種別と詳細の組み合わせが不正です。");
-    }
+    DomainChecks.require(!(kind != detailKind), PostValidationMessages.KIND_DETAILS_MISMATCH);
     title = clean(title);
     body = clean(body);
-    if (title.length() > 120 || body.length() > 8000) {
-      throw new IllegalArgumentException("入力が長すぎます。");
-    }
-    if (!subject.matches("[a-z0-9][a-z0-9-]{0,39}")) {
-      throw new IllegalArgumentException("投稿先か入力項目が不正です。");
-    }
-    if (kind != PostKind.COMMENT && title.isEmpty()) {
-      throw new IllegalArgumentException("タイトルを入力してください。");
-    }
-    if (kind != PostKind.BUILD && body.isEmpty()) {
-      throw new IllegalArgumentException("本文を入力してください。");
-    }
+    DomainChecks.require(!(title.length() > 120 || body.length() > 8000), PostValidationMessages.TEXT_TOO_LONG);
+    DomainChecks.require(!(!subject.matches("[a-z0-9][a-z0-9-]{0,39}")), PostValidationMessages.INVALID_SUBJECT);
+    DomainChecks.require(!(kind != PostKind.COMMENT && title.isEmpty()), PostValidationMessages.TITLE_REQUIRED);
+    DomainChecks.require(!(kind != PostKind.BUILD && body.isEmpty()), PostValidationMessages.BODY_REQUIRED);
   }
 
   /** cleanを扱う。 */

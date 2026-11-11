@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.posting.domain;
 
+import dev.characteratlas.domain.DomainChecks;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,8 +11,6 @@ public record GuideDetails(
   /** 攻略の詳細を初期化する。 */
   public GuideDetails {
     relatedCharacters = List.copyOf(relatedCharacters);
-    if (stage.filter(value -> value.length() > 120).isPresent()) {
-      throw new IllegalArgumentException("ステージ・難易度は120文字以内で入力してください。");
-    }
+    DomainChecks.require(!(stage.filter(value -> value.length() > 120).isPresent()), PostValidationMessages.STAGE_TOO_LONG);
   }
 }

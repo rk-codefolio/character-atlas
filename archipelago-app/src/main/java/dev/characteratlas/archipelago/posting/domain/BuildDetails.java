@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.posting.domain;
 
+import dev.characteratlas.domain.DomainChecks;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,17 +15,9 @@ public record BuildDetails(
   public BuildDetails {
     matrices = List.copyOf(matrices);
     mainStats = List.copyOf(mainStats);
-    if (matrices.size() < 2 || matrices.size() > 9) {
-      throw new IllegalArgumentException("航路紋を2種類以上選んでください。");
-    }
-    if (matrices.stream().map(MatrixSelection::name).distinct().count() != matrices.size()) {
-      throw new IllegalArgumentException("異なる航路紋を選んでください。");
-    }
-    if (mainStats.size() != 3) {
-      throw new IllegalArgumentException("装具スロット④・⑤・⑥を選んでください。");
-    }
-    if (targetStats.filter(value -> value.length() > 240).isPresent()) {
-      throw new IllegalArgumentException("目標ステータスは240文字以内で入力してください。");
-    }
+    DomainChecks.require(!(matrices.size() < 2 || matrices.size() > 9), PostValidationMessages.MATRIX_COUNT);
+    DomainChecks.require(!(matrices.stream().map(MatrixSelection::name).distinct().count() != matrices.size()), PostValidationMessages.DUPLICATE_MATRICES);
+    DomainChecks.require(!(mainStats.size() != 3), PostValidationMessages.MAIN_STAT_SLOTS);
+    DomainChecks.require(!(targetStats.filter(value -> value.length() > 240).isPresent()), PostValidationMessages.TARGET_STATS_TOO_LONG);
   }
 }

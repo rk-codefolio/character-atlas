@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.characteratlas.archipelago.catalog.infrastructure.RelatedPostMapper">
+  <select id="tagged" resultType="String">
+    SELECT subject_id FROM review_post WHERE kind IN ('COMMENT', 'BUILD') AND jsonb_exists(
+        CASE WHEN jsonb_typeof(details-&gt;'contentTags') = 'array' THEN details-&gt;'contentTags'
+             ELSE jsonb_build_array(details-&gt;&gt;'contentTag') END, #{contentId})
+    UNION
+    SELECT related.id FROM review_post, jsonb_array_elements_text(
+        CASE WHEN jsonb_typeof(details-&gt;'relatedCharacters') = 'array' THEN details-&gt;'relatedCharacters'
+             ELSE jsonb_build_array(details-&gt;&gt;'relatedCharacter') END) AS related(id)
+    WHERE kind = 'CONTENT' AND subject_id = #{contentId} AND related.id &lt;&gt; ''
+  </select>
+</mapper>

@@ -1,5 +1,6 @@
 package dev.characteratlas.archipelago.posting.domain;
 
+import dev.characteratlas.domain.DomainChecks;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
@@ -11,8 +12,6 @@ public record MatrixSelection(
   public MatrixSelection {
     Objects.requireNonNull(name);
     Objects.requireNonNull(points);
-    if (points.filter(value -> value.signum() < 0).isPresent()) {
-      throw new IllegalArgumentException("ポイントは空欄か0以上の整数にしてください。");
-    }
+    DomainChecks.require(!(points.filter(value -> value.signum() < 0).isPresent()), PostValidationMessages.NEGATIVE_MATRIX_POINTS);
   }
 }

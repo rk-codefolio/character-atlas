@@ -2,7 +2,7 @@
 
 架空ゲーム「風綴りの群島」の図鑑です。107人の渡り手を探し、スキルや育成値を確認できます。45件のコンテンツを掲載し、コメント・ビルド・攻略投稿、通報、管理者による対応を扱います。
 
-**[Dockerで起動する](archipelago-app/README.md#dockerで起動する)** · [操作を試す](archipelago-app/README.md#試し方) · [構成図・仕様](docs/ARCHITECTURE.md) · [Codexとの開発記録](docs/AI_DEVELOPMENT.md)
+**[Dockerで起動する](archipelago-app/README.md#dockerで起動する)** · [操作を試す](archipelago-app/README.md#試し方) · [構成図・仕様](docs/ARCHITECTURE.md) · [ドメイン一覧](docs/DOMAINS.md) · [Codexとの開発記録](docs/AI_DEVELOPMENT.md)
 
 | プロジェクト | 担当 |
 | --- | --- |

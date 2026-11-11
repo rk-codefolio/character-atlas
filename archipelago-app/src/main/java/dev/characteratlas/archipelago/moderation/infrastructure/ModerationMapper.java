@@ -36,14 +36,6 @@ interface ModerationMapper {
   List<AuditEntry> entries(@Param("offset") int offset);
 
   /** postsを扱う。 */
-  @Select(
-      """
-      SELECT p.post_id, p.kind, p.subject_id, COALESCE(c.display_name, p.subject_id),
-             p.title, left(p.body, 120), p.updated_at
-      FROM review_post p
-      LEFT JOIN catalog_character c ON c.character_id = p.subject_id AND p.kind <> 'CONTENT'
-      ORDER BY p.updated_at DESC, p.post_id LIMIT 50 OFFSET #{offset}
-      """)
   List<PostEntry> posts(@Param("offset") int offset);
 
   /** 追加するの通報を扱う。 */
@@ -62,7 +54,6 @@ interface ModerationMapper {
       @Param("note") String note);
 
   /** 投稿の存在するか確認するを扱う。 */
-  @Select("SELECT EXISTS (SELECT 1 FROM review_post WHERE post_id = #{id})")
   boolean postExists(@Param("id") UUID id);
 
   /** reportsを扱う。 */
