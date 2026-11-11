@@ -82,3 +82,13 @@ AIには、修正後の導線と操作手順を具体化し、実際の画面を
 | P3 | Discord通知が文字数上限を超える設定を受け付ける | 起動時に実際の通知文の長さを検証し、上限を超える設定を拒否 |
 
 [DiscordのWebhook仕様](https://docs.discord.com/developers/resources/webhook#execute-webhook)
+
+## Codexコードレビュー第3回
+
+人間レビュー対応の [PR #5〜#9](https://github.com/rk-codefolio/character-atlas/issues/1#issuecomment-6775691755) をすべてマージした `4e634b6` を対象に、`codex review` で再レビューしました。3件の指摘はいずれもP2です。[レビュー対象コミット](https://github.com/rk-codefolio/character-atlas/commit/4e634b6231cca1e469f8f643249bbbbc9f2e7eb8)
+
+| 指摘 | 対応 |
+| --- | --- |
+| DB接続先を変更しても統合テストの結果が再利用される | PostgreSQLを使う実行は毎回再検証し、空の接続先ではカバレッジ検査を失敗させる |
+| モジュール改名後に既存DBの認証設定を引き継ぐ手順がない | 旧ディレクトリの `.env` を引き継ぎ、初期化済みDBのパスワードを維持する手順を追記 |
+| 投稿の詳細がユースケースと永続化の境界で型を失う | 種別に対応する型付き詳細を投稿モデルに保持し、図鑑との整合はユースケースで確認する。既存のJSON形式への変換は永続化アダプターが行う |

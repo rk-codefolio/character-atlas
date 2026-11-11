@@ -32,12 +32,18 @@ def combinedData = files(layout.buildDirectory.file('jacoco/test.exec'), '../cat
 def combinedSources = files(sourceSets.main.allJava.srcDirs, '../catalog-core/src/main/java')
 def verifyIntegrationDatabase = tasks.register('verifyIntegrationDatabase') {
     doLast {
-        if (!integrationDatabase.isPresent()) {
+        if (integrationDatabase.getOrElse('').isBlank()) {
             throw new GradleException('ATLAS_TEST_DB_URL is required for aggregate coverage.')
         }
     }
 }
-tasks.named('test') { inputs.property('integrationDatabaseConfigured', integrationDatabase.isPresent()) }
+tasks.named('test') {
+    inputs.property('integrationDatabaseConfigured', integrationDatabase.map { !it.isBlank() }.orElse(false))
+    outputs.upToDateWhen { integrationDatabase.getOrElse('').isBlank() }
+    outputs.doNotCacheIf('Integration tests use an external PostgreSQL instance') {
+        !integrationDatabase.getOrElse('').isBlank()
+    }
+}
 def combinedReport = tasks.register('combinedCoverageReport', JacocoReport) {
     dependsOn verifyIntegrationDatabase, tasks.named('test'), coreProject.task(':test')
     classDirectories.setFrom(combinedClasses)

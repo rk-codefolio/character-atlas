@@ -10,6 +10,8 @@
 
 ## Dockerで起動する
 
+旧 `portfolio-demo` から更新する場合は、既存の `.env` を `archipelago-app/.env` に引き継いでから起動します。Composeのプロジェクト名とDBボリュームは共通です。初期化済みDBには、以前と同じ `ARCHIPELAGO_DB_PASSWORD` を使います。以下の `cp .env.example .env` は新規セットアップ時の手順です。
+
 Docker DesktopなどでDocker EngineとCompose v2を起動し、リポジトリのルートで次を実行します。
 
 ```sh
